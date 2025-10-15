@@ -1,0 +1,272 @@
+
+.phone-login-container.data-v-e0aec1e2 {
+	position: relative;
+	width: 100vw;
+	height: 100vh;
+	background: #FFFFFF;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	overflow: hidden;
+}
+
+/* Logo区域 */
+.logo-section.data-v-e0aec1e2 {
+	margin-top: 60rpx;
+	margin-bottom: 40rpx;
+	width: 250rpx;
+	height: 226rpx;
+}
+.logo.data-v-e0aec1e2 {
+	width: 100%;
+	height: 100%;
+}
+
+/* 品牌标题区域 */
+.brand-section.data-v-e0aec1e2 {
+	margin-bottom: 40rpx;
+	text-align: center;
+}
+.brand-title.data-v-e0aec1e2 {
+	font-family: 'Inter', sans-serif;
+	font-style: normal;
+	font-weight: 700;
+	font-size: 64rpx; /* 32px * 2 */
+	line-height: 78rpx; /* 39px * 2 */
+	color: #000000;
+	display: block;
+	margin-bottom: 4rpx;
+}
+.brand-desc.data-v-e0aec1e2 {
+	font-family: 'Inter', sans-serif;
+	font-style: normal;
+	font-weight: 400;
+	font-size: 32rpx; /* 16px * 2 */
+	line-height: 38rpx; /* 19px * 2 */
+	color: #333333;
+	display: block;
+}
+
+/* 登录表单卡片 */
+.login-form-card.data-v-e0aec1e2 {
+	position: relative;
+	width: 700rpx;
+	height: 848rpx;
+	background: #FFFFFF;
+	box-shadow: 0px 4rpx 20rpx rgba(193, 184, 232, 0.5);
+	border-radius: 20rpx;
+	display: flex;
+	flex-direction: column;
+	padding: 40rpx 40rpx;
+	margin-bottom: 40rpx;
+}
+
+/* 表单组 */
+.form-group.data-v-e0aec1e2 {
+	margin-bottom: 40rpx;
+}
+.form-label.data-v-e0aec1e2 {
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-style: normal;
+	font-weight: 400;
+	font-size: 32rpx; /* 16px * 2 */
+	line-height: 44rpx; /* 22px * 2 */
+	color: #333333;
+	display: block;
+	margin-bottom: 20rpx;
+}
+
+/* 输入框容器 */
+.input-container.data-v-e0aec1e2 {
+	position: relative;
+}
+.form-input.data-v-e0aec1e2 {
+	width: 100%;
+	height: 80rpx; /* 40px * 2 */
+	background: #F5F5F5;
+	border-radius: 20rpx; /* 10px * 2 */
+	border: none;
+	padding: 0 30rpx;
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-style: normal;
+	font-weight: 400;
+	font-size: 32rpx; /* 16px * 2 */
+	line-height: 44rpx; /* 22px * 2 */
+	color: #333333;
+	box-sizing: border-box;
+}
+.form-input.data-v-e0aec1e2::-webkit-input-placeholder {
+	color: #757575;
+}
+.form-input.data-v-e0aec1e2::placeholder {
+	color: #757575;
+}
+
+/* 验证码容器 */
+.verification-container.data-v-e0aec1e2 {
+	display: flex;
+	align-items: center;
+	gap: 20rpx;
+}
+.verification-input.data-v-e0aec1e2 {
+	flex: 1;
+}
+.send-code-btn.data-v-e0aec1e2 {
+	width: 200rpx;
+	height: 60rpx;
+	background: #8A70C9;
+	border-radius: 10rpx;
+	border: none;
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-style: normal;
+	font-weight: 400;
+	font-size: 24rpx;
+	line-height: 32rpx;
+	color: #FFFFFF;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	white-space: nowrap;
+}
+.send-code-btn.data-v-e0aec1e2:disabled {
+	background: #CCCCCC;
+	color: #999999;
+}
+.send-code-btn.data-v-e0aec1e2:active:not(:disabled) {
+	transform: scale(0.95);
+}
+
+/* 登录按钮 */
+.login-submit-btn.data-v-e0aec1e2 {
+	width: 100%;
+	height: 80rpx; /* 40px * 2 */
+	background: #EAEEFD;
+	border-radius: 20rpx; /* 10px * 2 */
+	border: none;
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-style: normal;
+	font-weight: 400;
+	font-size: 32rpx; /* 16px * 2 */
+	line-height: 44rpx; /* 22px * 2 */
+	color: #757575;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin-bottom: 40rpx;
+	transition: all 0.3s ease;
+}
+.login-submit-btn.active.data-v-e0aec1e2 {
+	background: #8A70C9;
+	color: #FFFFFF;
+}
+.login-submit-btn:active.active.data-v-e0aec1e2 {
+	transform: scale(0.98);
+}
+
+/* 注册账号按钮 */
+.register-btn.data-v-e0aec1e2 {
+	width: 100%;
+	height: 80rpx; /* 40px * 2 */
+	background: #FFFFFF;
+	border: 2rpx solid #C1B8E8;
+	border-radius: 20rpx; /* 10px * 2 */
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-style: normal;
+	font-weight: 400;
+	font-size: 32rpx; /* 16px * 2 */
+	line-height: 44rpx; /* 22px * 2 */
+	color: #333333;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin-bottom: 40rpx;
+}
+.register-btn.data-v-e0aec1e2:active {
+	transform: scale(0.98);
+	background: #F5F5F5;
+}
+
+/* 切换密码登录按钮 */
+.switch-login-btn.data-v-e0aec1e2 {
+	width: 100%;
+	height: 80rpx; /* 40px * 2 */
+	background: #FFFFFF;
+	border: 2rpx solid #C1B8E8;
+	border-radius: 20rpx; /* 10px * 2 */
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-style: normal;
+	font-weight: 400;
+	font-size: 32rpx; /* 16px * 2 */
+	line-height: 44rpx; /* 22px * 2 */
+	text-align: center;
+	color: #333333;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+.switch-login-btn.data-v-e0aec1e2:active {
+	transform: scale(0.98);
+	background: #F5F5F5;
+}
+
+/* 第三方登录区域 */
+.third-party-section.data-v-e0aec1e2 {
+	position: relative;
+	width: 700rpx;
+}
+
+/* 分割线区域 */
+.divider-section.data-v-e0aec1e2 {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 54rpx;
+	width: 100%;
+}
+
+/* 分割线 */
+.divider-line.data-v-e0aec1e2 {
+	width: 210rpx;
+	height: 2rpx;
+	background: #757575;
+}
+.divider-text.data-v-e0aec1e2 {
+	font-family: 'Inter', sans-serif;
+	font-style: normal;
+	font-weight: 400;
+	font-size: 24rpx;
+	line-height: 30rpx;
+	color: #757575;
+	background: #FFFFFF;
+	padding: 0 20rpx;
+	text-align: center;
+}
+
+/* 社交登录按钮 */
+.social-login.data-v-e0aec1e2 {
+	position: relative;
+	width: 100%;
+	height: 70rpx;
+	display: flex;
+	justify-content: center;
+	gap: 95rpx;
+	align-items: center;
+}
+
+/* 社交登录按钮 */
+.social-btn.data-v-e0aec1e2 {
+	width: 70rpx;
+	height: 70rpx;
+	border-radius: 50%;
+	background: #FFFFFF;
+	cursor: pointer;
+	transition: all 0.3s ease;
+}
+.social-btn.data-v-e0aec1e2:active {
+	transform: scale(0.9);
+}
+.social-icon.data-v-e0aec1e2 {
+	width: 70rpx;
+	height: 70rpx;
+}

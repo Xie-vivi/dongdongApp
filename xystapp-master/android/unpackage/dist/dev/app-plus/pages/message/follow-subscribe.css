@@ -1,0 +1,115 @@
+
+.follow-subscribe-container[data-v-449ef549] {
+	min-height: 100vh;
+	background: #F5F3FF;
+}
+.status-bar[data-v-449ef549] {
+	height: var(--status-bar-height, 44px);
+	background: #F5F3FF;
+}
+.top-nav[data-v-449ef549] {
+	height: 2.75rem;
+	background: #F6F2FC;
+	display: flex;
+	align-items: center;
+	position: relative;
+	padding: 0 1.25rem;
+}
+.nav-left[data-v-449ef549] {
+	width: 1.875rem;
+	height: 1.875rem;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+}
+.back-icon[data-v-449ef549] {
+	width: 1rem;
+	height: 1rem;
+}
+.nav-center[data-v-449ef549] {
+	flex: 1;
+	display: flex;
+	justify-content: center;
+}
+.nav-title[data-v-449ef549] {
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-size: 1.125rem;
+	font-weight: 600;
+	color: #333333;
+}
+.message-list[data-v-449ef549] {
+	padding: 0 0.9375rem;
+}
+.message-item[data-v-449ef549] {
+	background: #FFFFFF;
+	border-radius: 0.625rem;
+	padding: 0.9375rem;
+	margin-bottom: 0.625rem;
+	display: flex;
+	align-items: center;
+}
+.message-avatar[data-v-449ef549] {
+	margin-right: 0.75rem;
+}
+.avatar-img[data-v-449ef549] {
+	width: 3.125rem;
+	height: 3.125rem;
+	border-radius: 50%;
+}
+.message-content[data-v-449ef549] {
+	flex: 1;
+}
+.message-header[data-v-449ef549] {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 0.25rem;
+}
+.message-name[data-v-449ef549] {
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-size: 1rem;
+	font-weight: 600;
+	color: #333333;
+}
+.action-btn[data-v-449ef549] {
+	padding: 0.25rem 0.75rem;
+	border-radius: 0.625rem;
+	border: 0.0625rem solid #8A70C9;
+	background: transparent;
+	cursor: pointer;
+	transition: all 0.3s;
+}
+.action-btn.followed[data-v-449ef549] {
+	background: rgba(138, 112, 201, 0.1);
+	border-color: rgba(138, 112, 201, 0.3);
+}
+.action-text[data-v-449ef549] {
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-size: 0.75rem;
+	color: #8A70C9;
+	font-weight: 500;
+}
+.message-action[data-v-449ef549] {
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-size: 0.875rem;
+	color: #666666;
+	margin-bottom: 0.25rem;
+}
+.message-time[data-v-449ef549] {
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-size: 0.75rem;
+	color: #999999;
+}
+.history-section[data-v-449ef549] {
+	padding: 1.875rem 0;
+	display: flex;
+	justify-content: center;
+}
+.history-link[data-v-449ef549] {
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-size: 1rem;
+	color: #8A70C9;
+	font-weight: 600;
+	cursor: pointer;
+}

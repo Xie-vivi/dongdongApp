@@ -1,0 +1,20 @@
+{
+  "pages": [
+    "pages/login/login",
+    "pages/index/index",
+    "pages/profile/profile",
+    "pages/phone-login/phone-login",
+    "pages/register/register",
+    "pages/password-login/password-login",
+    "pages/profile-setup/profile-setup",
+    "pages/mbti-setup/mbti-setup",
+    "pages/mbti-type/mbti-type"
+  ],
+  "window": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "东东社团",
+    "navigationBarBackgroundColor": "#F8F8F8",
+    "backgroundColor": "#F8F8F8"
+  },
+  "usingComponents": {}
+}

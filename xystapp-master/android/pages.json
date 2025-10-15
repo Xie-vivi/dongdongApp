@@ -1,0 +1,115 @@
+{
+	"pages": [
+		{
+			"path": "pages/index/index",
+			"style": {
+				"navigationBarTitleText": "首页",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/login/login",
+			"style": {
+				"navigationBarTitleText": "登录",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/profile/profile",
+			"style": {
+				"navigationBarTitleText": "个人中心"
+			}
+		},
+		{
+			"path": "pages/phone-login/phone-login",
+			"style": {
+				"navigationBarTitleText": "手机登录",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/register/register",
+			"style": {
+				"navigationBarTitleText": "注册账号",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/password-login/password-login",
+			"style": {
+				"navigationBarTitleText": "账号密码登录",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/profile-setup/profile-setup",
+			"style": {
+				"navigationBarTitleText": "完善信息",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/mbti-setup/mbti-setup",
+			"style": {
+				"navigationBarTitleText": "设置MBTI",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/mbti-type/mbti-type",
+			"style": {
+				"navigationBarTitleText": "MBTI类型",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/post-detail/post-detail",
+			"style": {
+				"navigationBarTitleText": "帖子正文",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/message/message",
+			"style": {
+				"navigationBarTitleText": "消息",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/message/like-collect",
+			"style": {
+				"navigationBarTitleText": "点赞收藏",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/message/follow-subscribe",
+			"style": {
+				"navigationBarTitleText": "关注订阅",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/message/comment-at",
+			"style": {
+				"navigationBarTitleText": "评论@转发",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/event-detail/event-detail",
+			"style": {
+				"navigationBarTitleText": "活动详情",
+				"navigationStyle": "custom"
+			}
+		}
+	],
+	"globalStyle": {
+		"navigationBarTextStyle": "black",
+		"navigationBarTitleText": "东东社团",
+		"navigationBarBackgroundColor": "#F8F8F8",
+		"backgroundColor": "#F8F8F8"
+	},
+	"uniIdRouter": {}
+}

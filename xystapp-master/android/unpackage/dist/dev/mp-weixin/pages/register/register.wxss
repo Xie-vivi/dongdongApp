@@ -1,0 +1,219 @@
+
+/* 容器样式 */
+.register-container.data-v-bac4a35d {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	min-height: 100vh;
+	width: 100vw;
+	background: #FFFFFF;
+	padding: 40rpx 20rpx;
+	box-sizing: border-box;
+}
+
+/* Logo区域 */
+.logo-section.data-v-bac4a35d {
+	margin-bottom: 20rpx;
+}
+.logo.data-v-bac4a35d {
+	width: 250rpx;
+	height: 226rpx;
+}
+
+/* 品牌标题 */
+.brand-title.data-v-bac4a35d {
+	font-family: 'Inter', sans-serif;
+	font-style: normal;
+	font-weight: 700;
+	font-size: 64rpx;
+	line-height: 78rpx;
+	color: #000000;
+	margin-bottom: 10rpx;
+}
+.brand-subtitle.data-v-bac4a35d {
+	font-family: 'Inter', sans-serif;
+	font-style: normal;
+	font-weight: 400;
+	font-size: 32rpx;
+	line-height: 38rpx;
+	color: #333333;
+	margin-bottom: 40rpx;
+}
+
+/* 注册卡片 */
+.register-card.data-v-bac4a35d {
+	width: 700rpx;
+	background: #FFFFFF;
+	box-shadow: 0px 4rpx 20rpx rgba(193, 184, 232, 0.5);
+	border-radius: 20rpx;
+	padding: 40rpx;
+	margin-bottom: 60rpx;
+}
+
+/* 表单组 */
+.form-group.data-v-bac4a35d {
+	margin-bottom: 40rpx;
+}
+.form-group.data-v-bac4a35d:last-child {
+	margin-bottom: 0;
+}
+.form-label.data-v-bac4a35d {
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-style: normal;
+	font-weight: 400;
+	font-size: 32rpx;
+	line-height: 44rpx;
+	color: #333333;
+	display: block;
+	margin-bottom: 20rpx;
+}
+
+/* 输入框容器 */
+.input-container.data-v-bac4a35d {
+	background: #F5F5F5;
+	border-radius: 20rpx;
+	padding: 0 30rpx;
+	height: 80rpx;
+	display: flex;
+	align-items: center;
+}
+.form-input.data-v-bac4a35d {
+	flex: 1;
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-style: normal;
+	font-weight: 400;
+	font-size: 32rpx;
+	line-height: 44rpx;
+	color: #333333;
+	background: transparent;
+	border: none;
+	outline: none;
+}
+.form-input.data-v-bac4a35d::-webkit-input-placeholder {
+	color: #757575;
+}
+.form-input.data-v-bac4a35d::placeholder {
+	color: #757575;
+}
+
+/* 验证码容器 */
+.verification-container.data-v-bac4a35d {
+	padding-right: 20rpx;
+}
+.verification-input.data-v-bac4a35d {
+	margin-right: 20rpx;
+	flex: 1;
+}
+.send-code-btn.data-v-bac4a35d {
+	width: 200rpx;
+	height: 60rpx;
+	background: #8A70C9;
+	border-radius: 10rpx;
+	border: none;
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-style: normal;
+	font-weight: 400;
+	font-size: 24rpx;
+	line-height: 32rpx;
+	color: #FFFFFF;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	white-space: nowrap;
+}
+.send-code-btn.data-v-bac4a35d:active {
+	transform: scale(0.95);
+}
+
+/* 注册按钮 */
+.register-submit-btn.data-v-bac4a35d {
+	width: 700rpx;
+	height: 100rpx;
+	background: #8A70C9;
+	border-radius: 20rpx;
+	border: none;
+	font-family: 'Inter', sans-serif;
+	font-style: normal;
+	font-weight: 600;
+	font-size: 36rpx;
+	line-height: 44rpx;
+	color: #FFFFFF;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin-bottom: 60rpx;
+}
+.register-submit-btn.data-v-bac4a35d:active {
+	transform: scale(0.98);
+	background: #7A5FB8;
+}
+
+/* 分割线 */
+.divider-container.data-v-bac4a35d {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 700rpx;
+	margin-bottom: 40rpx;
+	position: relative;
+}
+.divider-line.data-v-bac4a35d {
+	width: 210rpx;
+	height: 2rpx;
+	background: #757575;
+}
+.divider-text.data-v-bac4a35d {
+	font-family: 'Inter', sans-serif;
+	font-style: normal;
+	font-weight: 400;
+	font-size: 24rpx;
+	line-height: 30rpx;
+	color: #757575;
+	background: #FFFFFF;
+	padding: 0 20rpx;
+	text-align: center;
+}
+
+/* 社交登录 */
+.social-login.data-v-bac4a35d {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 60rpx;
+	margin-bottom: 40rpx;
+}
+.social-btn.data-v-bac4a35d {
+	width: 70rpx;
+	height: 70rpx;
+	background: #FFFFFF;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	box-shadow: 0px 2rpx 8rpx rgba(0, 0, 0, 0.1);
+}
+.social-btn.data-v-bac4a35d:active {
+	transform: scale(0.95);
+}
+.social-icon.data-v-bac4a35d {
+	width: 70rpx;
+	height: 70rpx;
+}
+
+/* 返回登录 */
+.back-to-login.data-v-bac4a35d {
+	text-align: center;
+}
+.login-link.data-v-bac4a35d {
+	font-family: 'Inter', sans-serif;
+	font-style: normal;
+	font-weight: 400;
+	font-size: 28rpx;
+	line-height: 34rpx;
+	color: #8A70C9;
+	text-decoration: underline;
+}
+.login-link.data-v-bac4a35d:active {
+	opacity: 0.7;
+}

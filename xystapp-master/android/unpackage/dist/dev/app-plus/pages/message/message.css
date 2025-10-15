@@ -1,0 +1,240 @@
+
+.footer[data-v-c65ea04b] {
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	width: 100%;
+	height: 5rem; /* 80px * 2 */
+	background: #F9F6FF;
+	display: flex;
+	align-items: center;
+	justify-content: space-around;
+	z-index: 100;
+}
+.footer-item[data-v-c65ea04b] {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.25rem;
+}
+.publish-btn[data-v-c65ea04b] {
+	position: relative;
+}
+.footer-icon[data-v-c65ea04b] {
+	width: 1.375rem; /* 22px * 2 */
+	height: 1.375rem;
+}
+.message-icon-wrapper[data-v-c65ea04b] {
+	position: relative;
+	width: 1.375rem;
+	height: 1.375rem;
+}
+.message-badge[data-v-c65ea04b] {
+	position: absolute;
+	top: -0.25rem;
+	right: -0.25rem;
+	width: 1.0625rem; /* 17px * 2 */
+	height: 1rem; /* 16px * 2 */
+	background: #8A70C9;
+	border: 0.0625rem solid #F9F6FF; /* 1px * 2 */
+	border-radius: 0.9375rem; /* 15px * 2 */
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+.badge-text[data-v-c65ea04b] {
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-size: 0.625rem; /* 10px * 2 */
+	line-height: 0.875rem; /* 14px * 2 */
+	color: #FFFFFF;
+}
+.publish-icon[data-v-c65ea04b] {
+	width: 3rem; /* 48px * 2 */
+	height: 2.5rem; /* 40px * 2 */
+	background: #8A70C9;
+	border-radius: 0.9375rem; /* 15px * 2 */
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	position: relative;
+}
+.plus-h[data-v-c65ea04b], .plus-v[data-v-c65ea04b] {
+	position: absolute;
+	background: #FFFFFF;
+}
+.plus-h[data-v-c65ea04b] {
+	width: 1rem; /* 16px * 2 */
+	height: 0.1875rem; /* 3px * 2 */
+}
+.plus-v[data-v-c65ea04b] {
+	width: 0.1875rem; /* 3px * 2 */
+	height: 1rem; /* 16px * 2 */
+}
+.footer-text[data-v-c65ea04b] {
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-size: 0.75rem; /* 12px * 2 */
+	line-height: 1rem; /* 16px * 2 */
+	color: #333333;
+}
+
+
+.message-container[data-v-4c1b26cf] {
+	min-height: 100vh;
+	background: #F5F3FF;
+	padding-bottom: 5rem; /* 为底部导航栏留空间 */
+}
+.status-bar[data-v-4c1b26cf] {
+	height: var(--status-bar-height, 44px);
+	background: #F5F3FF;
+}
+.top-nav[data-v-4c1b26cf] {
+	height: 2.75rem;
+	background: #F6F2FC;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	position: relative;
+}
+.nav-title[data-v-4c1b26cf] {
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-size: 1.125rem;
+	font-weight: 600;
+	color: #333333;
+}
+.message-stats-card[data-v-4c1b26cf] {
+	margin: 1.25rem 0.9375rem;
+	background: #FFFFFF;
+	border-radius: 0.75rem;
+	padding: 1.5625rem 0.625rem;
+	display: flex;
+	justify-content: space-around;
+	align-items: center;
+	box-shadow: 0 0.125rem 0.625rem rgba(138, 112, 201, 0.1);
+}
+.stats-item[data-v-4c1b26cf] {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	position: relative;
+	cursor: pointer;
+}
+.stats-icon[data-v-4c1b26cf] {
+	width: 2.5rem;
+	height: 2.5rem;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin-bottom: 0.5rem;
+	position: relative;
+}
+.like-icon[data-v-4c1b26cf] {
+	background: rgba(138, 112, 201, 0.1);
+}
+.follow-icon[data-v-4c1b26cf] {
+	background: rgba(138, 112, 201, 0.1);
+}
+.comment-icon[data-v-4c1b26cf] {
+	background: rgba(138, 112, 201, 0.1);
+}
+.icon-img[data-v-4c1b26cf] {
+	width: 1.375rem;
+	height: 1.375rem;
+}
+.stats-badge[data-v-4c1b26cf] {
+	position: absolute;
+	top: -0.25rem;
+	right: -0.25rem;
+	min-width: 1.125rem;
+	height: 1.125rem;
+	background: #8A70C9;
+	border: 0.0625rem solid #FFFFFF;
+	border-radius: 0.5625rem;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0 0.25rem;
+}
+.badge-text[data-v-4c1b26cf] {
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-size: 0.625rem;
+	color: #FFFFFF;
+	font-weight: 600;
+}
+.stats-text[data-v-4c1b26cf] {
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-size: 0.875rem;
+	color: #666666;
+	font-weight: 500;
+}
+.message-list[data-v-4c1b26cf] {
+	margin: 0 0.9375rem;
+}
+.message-item[data-v-4c1b26cf] {
+	background: #FFFFFF;
+	border-radius: 0.625rem;
+	padding: 0.9375rem;
+	margin-bottom: 0.625rem;
+	display: flex;
+	align-items: center;
+	cursor: pointer;
+	transition: transform 0.2s;
+}
+.message-item[data-v-4c1b26cf]:active {
+	transform: scale(0.98);
+}
+.message-avatar[data-v-4c1b26cf] {
+	position: relative;
+	margin-right: 0.75rem;
+}
+.avatar-img[data-v-4c1b26cf] {
+	width: 3.125rem;
+	height: 3.125rem;
+	border-radius: 50%;
+}
+.message-count-badge[data-v-4c1b26cf] {
+	position: absolute;
+	top: -0.25rem;
+	right: -0.25rem;
+	min-width: 1.125rem;
+	height: 1.125rem;
+	background: #FF6B6B;
+	border: 0.0625rem solid #FFFFFF;
+	border-radius: 0.5625rem;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0 0.25rem;
+}
+.count-text[data-v-4c1b26cf] {
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-size: 0.625rem;
+	color: #FFFFFF;
+	font-weight: 600;
+}
+.message-content[data-v-4c1b26cf] {
+	flex: 1;
+}
+.message-header[data-v-4c1b26cf] {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 0.375rem;
+}
+.message-name[data-v-4c1b26cf] {
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-size: 1rem;
+	font-weight: 600;
+	color: #333333;
+}
+.message-time[data-v-4c1b26cf] {
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-size: 0.75rem;
+	color: #999999;
+}
+.message-preview[data-v-4c1b26cf] {
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-size: 0.875rem;
+	color: #666666;
+	line-height: 1.4;
+}

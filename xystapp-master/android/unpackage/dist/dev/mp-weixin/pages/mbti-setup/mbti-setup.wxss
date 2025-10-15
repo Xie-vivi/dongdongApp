@@ -1,0 +1,212 @@
+
+/* 容器样式 */
+.mbti-setup-container.data-v-a7f4e6a3 {
+	min-height: 100vh;
+	background: #FFFFFF;
+	padding-bottom: 140rpx; /* 为底部按钮留出空间 */
+}
+
+/* 顶部区域样式 */
+.header-section.data-v-a7f4e6a3 {
+	padding: 40rpx 40rpx 60rpx 40rpx;
+	background: #FFFFFF;
+}
+
+/* 进度条容器 */
+.progress-container.data-v-a7f4e6a3 {
+	margin-bottom: 40rpx;
+}
+
+/* 进度条背景 */
+.progress-bar.data-v-a7f4e6a3 {
+	width: 100%;
+	height: 8rpx; /* 4px * 2 */
+	background: #F0F0F0;
+	border-radius: 4rpx; /* 2px * 2 */
+	overflow: hidden;
+}
+
+/* 进度条填充 - 第二步 */
+.progress-fill.progress-step2.data-v-a7f4e6a3 {
+	width: 66.67%; /* 3步中的第2步 */
+	height: 100%;
+	background: linear-gradient(90deg, #8A70C9 0%, #A688D4 100%);
+	border-radius: 4rpx; /* 2px * 2 */
+	transition: width 0.3s ease;
+}
+
+/* 页面标题 */
+.page-title.data-v-a7f4e6a3 {
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-style: normal;
+	font-weight: 500;
+	font-size: 44rpx; /* 22px * 2 */
+	line-height: 44rpx; /* 22px * 2 */
+	color: #8A70C9;
+	text-align: center;
+}
+
+/* MBTI选择区域 */
+.mbti-section.data-v-a7f4e6a3 {
+	padding: 0 40rpx;
+}
+
+/* MBTI分组 */
+.mbti-group.data-v-a7f4e6a3 {
+	margin-bottom: 60rpx;
+}
+
+/* 分组标题 */
+.group-title.data-v-a7f4e6a3 {
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-style: normal;
+	font-weight: 500;
+	font-size: 32rpx; /* 16px * 2 */
+	line-height: 44rpx; /* 22px * 2 */
+	color: #333333;
+	margin-bottom: 30rpx;
+	display: block;
+}
+
+/* MBTI选项容器 */
+.mbti-options.data-v-a7f4e6a3 {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 20rpx;
+	justify-content: space-between;
+}
+
+/* MBTI选项 */
+.mbti-option.data-v-a7f4e6a3 {
+	flex: 1;
+	min-width: 0;
+	max-width: calc(25% - 15rpx);
+	height: 80rpx; /* 40px * 2 */
+	background: #FFFFFF;
+	border: 2rpx solid #E0E0E0;
+	border-radius: 20rpx; /* 10px * 2 */
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: all 0.3s ease;
+	cursor: pointer;
+}
+
+/* 选中状态 */
+.mbti-option.selected.data-v-a7f4e6a3 {
+	background: #8A70C9;
+	border-color: #8A70C9;
+}
+
+/* MBTI文字 */
+.mbti-text.data-v-a7f4e6a3 {
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-style: normal;
+	font-weight: 400;
+	font-size: 28rpx; /* 14px * 2 */
+	line-height: 38rpx; /* 19px * 2 */
+	color: #333333;
+	transition: color 0.3s ease;
+}
+
+/* 选中状态文字 */
+.mbti-option.selected .mbti-text.data-v-a7f4e6a3 {
+	color: #FFFFFF;
+	font-weight: 500;
+}
+
+/* 底部按钮区域 */
+.bottom-buttons.data-v-a7f4e6a3 {
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	width: 100%;
+	height: 120rpx;
+	padding: 20rpx 60rpx;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 30rpx;
+	background: #FFFFFF;
+	border-top: 1rpx solid #F0F0F0;
+	z-index: 100;
+	box-sizing: border-box;
+}
+
+/* 次要按钮 */
+.btn-secondary.data-v-a7f4e6a3 {
+	flex: 1;
+	max-width: 280rpx;
+	height: 80rpx; /* 40px * 2 */
+	background: #FFFFFF;
+	border: 2rpx solid #C1B8E8;
+	border-radius: 20rpx; /* 10px * 2 */
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-style: normal;
+	font-weight: 400;
+	font-size: 28rpx; /* 14px * 2 */
+	line-height: 38rpx; /* 19px * 2 */
+	color: #757575;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+.btn-secondary.data-v-a7f4e6a3:active {
+	transform: scale(0.98);
+	background: #F5F5F5;
+}
+
+/* 主要按钮 */
+.btn-primary.data-v-a7f4e6a3 {
+	flex: 1;
+	max-width: 280rpx;
+	height: 80rpx; /* 40px * 2 */
+	background: #EAEEFD;
+	border-radius: 20rpx; /* 10px * 2 */
+	border: none;
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-style: normal;
+	font-weight: 400;
+	font-size: 28rpx; /* 14px * 2 */
+	line-height: 38rpx; /* 19px * 2 */
+	color: #757575;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: all 0.3s ease;
+}
+.btn-primary.active.data-v-a7f4e6a3 {
+	background: #8A70C9;
+	color: #FFFFFF;
+}
+.btn-primary.data-v-a7f4e6a3:active {
+	transform: scale(0.98);
+}
+.btn-primary.data-v-a7f4e6a3:disabled {
+	background: #F5F5F5;
+	color: #CCCCCC;
+	cursor: not-allowed;
+}
+
+/* 响应式适配 */
+@media screen and (max-width: 750rpx) {
+.mbti-options.data-v-a7f4e6a3 {
+		gap: 15rpx;
+}
+.mbti-option.data-v-a7f4e6a3 {
+		max-width: calc(25% - 12rpx);
+}
+}
+@media screen and (max-width: 600rpx) {
+.mbti-options.data-v-a7f4e6a3 {
+		gap: 10rpx;
+}
+.mbti-option.data-v-a7f4e6a3 {
+		max-width: calc(25% - 8rpx);
+		height: 70rpx;
+}
+.mbti-text.data-v-a7f4e6a3 {
+		font-size: 24rpx;
+}
+}
