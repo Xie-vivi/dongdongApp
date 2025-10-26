@@ -1,20 +1,14 @@
 <template>
 	<view class="post-detail-container">
-		<!-- 顶部状态栏占位 -->
-		<view class="status-bar"></view>
-		
 		<!-- 顶部导航栏 -->
-		<view class="top-nav">
-			<view class="nav-left" @click="goBack">
-				<image src="/static/正文/back.png" class="back-icon" mode="aspectFit"></image>
-			</view>
-			<view class="nav-center">
-				<text class="nav-title">帖子正文</text>
-			</view>
-			<view class="nav-right" @click="showMore">
-				<image src="/static/正文/点点.png" class="more-icon" mode="aspectFit"></image>
-			</view>
-		</view>
+		<TopNavigation 
+			title="帖子正文" 
+			titleColor="#8A70C9"
+			:showBack="true" 
+			:showMore="true"
+			@back="goBack"
+			@more="showMore"
+		/>
 		
 		<!-- 帖子内容区域 -->
 		<view class="post-content">
@@ -164,7 +158,12 @@
 </template>
 
 <script>
+import TopNavigation from '@/components/TopNavigation.vue'
+
 export default {
+	components: {
+		TopNavigation
+	},
 	data() {
 		return {
 			postData: {
@@ -364,47 +363,6 @@ export default {
 .post-detail-container {
 	background: #F6F2FC;
 	min-height: 100vh;
-}
-
-.status-bar {
-	height: 88rpx; /* 44px * 2 状态栏高度 */
-	background: #F6F2FC;
-}
-
-.top-nav {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	height: 88rpx;
-	padding: 0 40rpx;
-	background: #F6F2FC;
-	
-	.nav-left, .nav-right {
-		width: 48rpx;
-		height: 48rpx;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		
-		.back-icon, .more-icon {
-			width: 48rpx;
-			height: 48rpx;
-		}
-	}
-	
-	.nav-center {
-		flex: 1;
-		display: flex;
-		justify-content: center;
-		
-		.nav-title {
-			font-family: 'Alibaba PuHuiTi';
-			font-weight: 500;
-			font-size: 32rpx;
-			line-height: 44rpx;
-			color: #8A70C9;
-		}
-	}
 }
 
 .post-content {

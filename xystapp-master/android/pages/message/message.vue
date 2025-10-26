@@ -86,6 +86,7 @@ export default {
 			messageList: [
 				{
 					id: 1,
+					type: 'private',
 					name: '会吃西瓜的小鸭纸',
 					avatar: '/static/关注页/follow-users-section/Ellipse 2.png',
 					preview: '今天出去打球吗？明个个？',
@@ -94,14 +95,18 @@ export default {
 				},
 				{
 					id: 2,
-					name: '不知名用户',
+					type: 'group',
+					name: 'lol群',
 					avatar: '/static/关注页/follow-users-section/Ellipse 9.png',
-					preview: '我们聚餐喝酒去一晚呗？',
+					preview: '国服塞拉斯：你又欠打了？偷我图干嘛',
 					time: '19:02',
-					unreadCount: 0
+					unreadCount: 15,
+					notice: '入群须知: 大家可以随意组队打lol   不要把群...',
+					activity: 'lol线下比赛   2025.8.25   17:00-18:00'
 				},
 				{
 					id: 3,
+					type: 'private',
 					name: '你叫什么名字',
 					avatar: '/static/关注页/follow-users-section/Ellipse 11.png',
 					preview: '我们聚餐喝酒[合情]',
@@ -110,6 +115,7 @@ export default {
 				},
 				{
 					id: 4,
+					type: 'group',
 					name: '羽毛球群',
 					avatar: '/static/关注页/follow-users-section/Ellipse 13.png',
 					preview: '不知名用户：这是老人新手警了',
@@ -118,6 +124,7 @@ export default {
 				},
 				{
 					id: 5,
+					type: 'group',
 					name: '原神集会',
 					avatar: '/static/关注页/follow-users-section/Ellipse 14.png',
 					preview: '群主：发支付宝账号码吧',
@@ -126,6 +133,7 @@ export default {
 				},
 				{
 					id: 6,
+					type: 'group',
 					name: '鸣潮集会',
 					avatar: '/static/关注页/follow-users-section/Ellipse 15.png',
 					preview: '群主：有没有人陪每日刷在不来点个赞...',
@@ -134,6 +142,7 @@ export default {
 				},
 				{
 					id: 7,
+					type: 'group',
 					name: '锋芒值YDs',
 					avatar: '/static/关注页/follow-users-section/Ellipse 16.png',
 					preview: '请奇大人的朋：暴雪游戏大人的朋友[图...',
@@ -163,8 +172,22 @@ export default {
 			}
 		},
 		openMessage(message) {
-			// 这里可以跳转到具体的聊天页面
-			console.log('打开消息:', message)
+			// 跳转到聊天页面（私聊或群聊）
+			let url = `/pages/message/chat-detail?type=${message.type || 'private'}&id=${message.id}&name=${encodeURIComponent(message.name)}&avatar=${encodeURIComponent(message.avatar)}`
+			
+			// 如果是群聊，传递群公告和活动信息
+			if (message.type === 'group') {
+				if (message.notice) {
+					url += `&notice=${encodeURIComponent(message.notice)}`
+				}
+				if (message.activity) {
+					url += `&activity=${encodeURIComponent(message.activity)}`
+				}
+			}
+			
+			uni.navigateTo({
+				url: url
+			})
 		}
 	}
 }

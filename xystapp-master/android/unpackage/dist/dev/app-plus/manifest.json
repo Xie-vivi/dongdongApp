@@ -4,7 +4,7 @@
     "iPhone",
     "iPad"
   ],
-  "id": "__UNI__123456",
+  "id": "__UNI__76151C7",
   "name": "dongdong-app",
   "version": {
     "name": "1.0.0",
@@ -74,6 +74,7 @@
       "style": "dark",
       "background": "#F8F8F8"
     },
+    "arguments": "{\"name\":\"\",\"path\":\"\",\"query\":\"\"}",
     "uniStatistics": {
       "enable": false
     },

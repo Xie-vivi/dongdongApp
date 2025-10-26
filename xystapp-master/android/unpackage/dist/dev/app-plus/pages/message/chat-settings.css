@@ -1,0 +1,127 @@
+
+.top-navigation-wrapper[data-v-11dc4142] {
+	background: #F6F2FC;
+}
+.status-bar[data-v-11dc4142] {
+	height: 2.75rem; /* 44px * 2 状态栏高度 */
+	background: #F6F2FC;
+}
+.top-nav[data-v-11dc4142] {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	height: 2.75rem;
+	padding: 0 1.25rem;
+	background: #F6F2FC;
+}
+.nav-left[data-v-11dc4142], .nav-right[data-v-11dc4142] {
+	width: 1.5rem;
+	height: 1.5rem;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+}
+.back-icon[data-v-11dc4142], .more-icon[data-v-11dc4142] {
+	width: 1.5rem;
+	height: 1.5rem;
+}
+.nav-center[data-v-11dc4142] {
+	flex: 1;
+	display: flex;
+	justify-content: center;
+}
+.nav-title[data-v-11dc4142] {
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-weight: 500;
+	font-size: 1rem;
+	line-height: 1.375rem;
+	text-align: center;
+}
+
+
+.chat-settings-container[data-v-443a9e51] {
+	min-height: 100vh;
+	background: #F6F2FC;
+}
+
+/* 用户信息卡片 */
+.user-card[data-v-443a9e51] {
+	margin: 0 0 0.625rem 0;
+	background: #FFFFFF;
+	border-radius: 0.625rem;
+	padding: 0.9375rem 1.25rem;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+.user-info[data-v-443a9e51] {
+	display: flex;
+	align-items: center;
+	flex: 1;
+}
+.user-avatar[data-v-443a9e51] {
+	width: 3.125rem;
+	height: 3.125rem;
+	border-radius: 50%;
+	margin-right: 0.9375rem;
+}
+.user-details[data-v-443a9e51] {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+}
+.user-name[data-v-443a9e51] {
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-weight: 400;
+	font-size: 1rem;
+	line-height: 0.9375rem;
+	color: #333333;
+	margin-bottom: 0.625rem;
+}
+.user-id[data-v-443a9e51] {
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-weight: 400;
+	font-size: 1rem;
+	line-height: 0.9375rem;
+	color: #333333;
+}
+.arrow-right[data-v-443a9e51] {
+	width: 1.5rem;
+	height: 1.5rem;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+.arrow-icon[data-v-443a9e51] {
+	width: 1.5rem;
+	height: 1.5rem;
+	transform: rotate(180deg);
+}
+
+/* 设置选项 */
+.settings-section[data-v-443a9e51] {
+	background: #FFFFFF;
+}
+.setting-item[data-v-443a9e51] {
+	height: 3.75rem;
+	padding: 0 1.25rem;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	background: #FFFFFF;
+	border-bottom: 0.03125rem solid #E6D9F9;
+}
+.setting-item.border-none[data-v-443a9e51] {
+	border-bottom: none;
+}
+.setting-label[data-v-443a9e51] {
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-weight: 400;
+	font-size: 1rem;
+	line-height: 0.9375rem;
+	color: #333333;
+}
+.setting-switch[data-v-443a9e51] {
+	transform: scale(0.8);
+}
