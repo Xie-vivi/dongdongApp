@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xystapp.mapper.FieldTagMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.xystapp.entity.FieldTag">
+        <id column="id" property="id" />
+        <result column="field_id" property="fieldId" />
+        <result column="tag_id" property="tagId" />
+        <result column="created_at" property="createdAt" />
+    </resultMap>
+
+    <!-- 带标签信息的映射结果 -->
+    <resultMap id="FieldTagWithTagResultMap" type="com.xystapp.entity.FieldTag" extends="BaseResultMap">
+        <association property="tag" javaType="com.xystapp.entity.Tag">
+            <id column="tag_id" property="id" />
+            <result column="tag_name" property="name" />
+            <result column="tag_color" property="color" />
+            <result column="tag_description" property="description" />
+            <result column="tag_sort_order" property="sortOrder" />
+            <result column="tag_is_active" property="isActive" />
+        </association>
+    </resultMap>
+
+    <!-- 带场地信息的映射结果 -->
+    <resultMap id="FieldTagWithFieldResultMap" type="com.xystapp.entity.FieldTag" extends="BaseResultMap">
+        <association property="field" javaType="com.xystapp.entity.Field">
+            <id column="field_id" property="id" />
+            <result column="field_name" property="name" />
+            <result column="field_description" property="description" />
+            <result column="field_avatar" property="avatar" />
+            <result column="field_creator_id" property="creatorId" />
+            <result column="field_members_count" property="membersCount" />
+        </association>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, field_id, tag_id, created_at
+    </sql>
+
+    <!-- 根据场地ID查询标签关联 -->
+    <select id="selectByFieldId" resultMap="FieldTagWithTagResultMap">
+        SELECT 
+            ft.id, ft.field_id, ft.tag_id, ft.created_at,
+            t.id as tag_id, t.name as tag_name, t.color as tag_color, 
+            t.description as tag_description, t.sort_order as tag_sort_order, 
+            t.is_active as tag_is_active
+        FROM field_tags ft
+        INNER JOIN tags t ON ft.tag_id = t.id
+        WHERE ft.field_id = #{fieldId}
+        ORDER BY t.sort_order ASC
+    </select>
+
+    <!-- 根据标签ID查询场地关联 -->
+    <select id="selectByTagId" resultMap="FieldTagWithFieldResultMap">
+        SELECT 
+            ft.id, ft.field_id, ft.tag_id, ft.created_at,
+            f.id as field_id, f.name as field_name, f.description as field_description,
+            f.avatar as field_avatar, f.creator_id as field_creator_id, f.members_count as field_members_count
+        FROM field_tags ft
+        INNER JOIN fields f ON ft.field_id = f.id
+        WHERE ft.tag_id = #{tagId}
+        ORDER BY f.created_at DESC
+    </select>
+
+    <!-- 删除场地的所有标签关联 -->
+    <delete id="deleteByFieldId">
+        DELETE FROM field_tags WHERE field_id = #{fieldId}
+    </delete>
+
+    <!-- 删除标签的所有场地关联 -->
+    <delete id="deleteByTagId">
+        DELETE FROM field_tags WHERE tag_id = #{tagId}
+    </delete>
+
+    <!-- 批量插入场地标签关联 -->
+    <insert id="batchInsert" parameterType="java.util.List">
+        INSERT INTO field_tags (field_id, tag_id, created_at)
+        VALUES
+        <foreach collection="fieldTags" item="item" separator=",">
+            (#{item.fieldId}, #{item.tagId}, #{item.createdAt})
+        </foreach>
+    </insert>
+
+    <!-- 根据标签ID查询场地列表（带场地信息） -->
+    <select id="selectFieldsWithTagInfo" resultMap="FieldTagWithFieldResultMap">
+        SELECT 
+            ft.id, ft.field_id, ft.tag_id, ft.created_at,
+            f.id as field_id, f.name as field_name, f.description as field_description,
+            f.avatar as field_avatar, f.creator_id as field_creator_id, f.members_count as field_members_count,
+            f.created_at as field_created_at, f.updated_at as field_updated_at
+        FROM field_tags ft
+        INNER JOIN fields f ON ft.field_id = f.id
+        WHERE ft.tag_id = #{tagId}
+        ORDER BY f.created_at DESC
+    </select>
+
+</mapper>

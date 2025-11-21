@@ -1,0 +1,348 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xystapp.mapper.PostMapper">
+
+    <!-- 帖子结果映射（包含用户信息） -->
+    <resultMap id="PostWithUserMap" type="com.xystapp.entity.Post">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="title" property="title"/>
+        <result column="subtitle" property="subtitle"/>
+        <result column="content" property="content"/>
+        <result column="images" property="images"/>
+        <result column="tag" property="tag"/>
+        <result column="likes_count" property="likesCount"/>
+        <result column="stars_count" property="starsCount"/>
+        <result column="comments_count" property="commentsCount"/>
+        <result column="status" property="status"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+        
+        <!-- 用户信息（关联字段） -->
+        <result column="username" property="username"/>
+        <result column="nickname" property="nickname"/>
+        <result column="avatar" property="avatar"/>
+    </resultMap>
+
+    <!-- 分页查询帖子列表（包含用户信息） -->
+    <select id="selectPostsWithUser" resultMap="PostWithUserMap">
+        SELECT 
+            p.id, p.user_id, p.title, p.subtitle, p.content, p.images, p.tag,
+            p.likes_count, p.stars_count, p.comments_count, p.status,
+            p.created_at, p.updated_at,
+            u.username, u.nickname, u.avatar
+        FROM posts p
+        LEFT JOIN users u ON p.user_id = u.id
+        <where>
+            <if test="query.status != null and query.status != ''">
+                AND p.status = #{query.status}
+            </if>
+            <if test="query.userId != null">
+                AND p.user_id = #{query.userId}
+            </if>
+            <if test="query.tag != null and query.tag != ''">
+                AND p.tag = #{query.tag}
+            </if>
+            <if test="query.keyword != null and query.keyword != ''">
+                AND (p.title LIKE CONCAT('%', #{query.keyword}, '%') 
+                     OR p.subtitle LIKE CONCAT('%', #{query.keyword}, '%')
+                     OR p.content LIKE CONCAT('%', #{query.keyword}, '%')
+                     OR u.nickname LIKE CONCAT('%', #{query.keyword}, '%')
+                     OR u.username LIKE CONCAT('%', #{query.keyword}, '%'))
+            </if>
+        </where>
+        <choose>
+            <when test="query.sortBy == 'created_at'">
+                ORDER BY p.created_at
+            </when>
+            <when test="query.sortBy == 'updated_at'">
+                ORDER BY p.updated_at
+            </when>
+            <when test="query.sortBy == 'likes_count'">
+                ORDER BY p.likes_count
+            </when>
+            <when test="query.sortBy == 'comments_count'">
+                ORDER BY p.comments_count
+            </when>
+            <otherwise>
+                ORDER BY p.created_at
+            </otherwise>
+        </choose>
+        <choose>
+            <when test="query.sortOrder == 'asc'">
+                ASC
+            </when>
+            <otherwise>
+                DESC
+            </otherwise>
+        </choose>
+    </select>
+
+    <!-- 根据ID查询帖子详情（包含用户信息） -->
+    <select id="selectPostWithUserById" resultMap="PostWithUserMap">
+        SELECT 
+            p.id, p.user_id, p.title, p.subtitle, p.content, p.images, p.tag,
+            p.likes_count, p.stars_count, p.comments_count, p.status,
+            p.created_at, p.updated_at,
+            u.username, u.nickname, u.avatar
+        FROM posts p
+        LEFT JOIN users u ON p.user_id = u.id
+        WHERE p.id = #{id}
+    </select>
+
+    <!-- 查询用户的帖子列表 -->
+    <select id="selectPostsByUserId" resultMap="PostWithUserMap">
+        SELECT 
+            p.id, p.user_id, p.title, p.subtitle, p.content, p.images, p.tag,
+            p.likes_count, p.stars_count, p.comments_count, p.status,
+            p.created_at, p.updated_at,
+            u.username, u.nickname, u.avatar
+        FROM posts p
+        LEFT JOIN users u ON p.user_id = u.id
+        WHERE p.user_id = #{userId}
+        <if test="status != null and status != ''">
+            AND p.status = #{status}
+        </if>
+        ORDER BY p.created_at DESC
+    </select>
+
+    <!-- 更新帖子统计信息 -->
+    <update id="updatePostStats">
+        UPDATE posts 
+        SET 
+            <if test="likesCount != null">
+                likes_count = #{likesCount},
+            </if>
+            <if test="starsCount != null">
+                stars_count = #{starsCount},
+            </if>
+            <if test="commentsCount != null">
+                comments_count = #{commentsCount},
+            </if>
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 批量查询帖子信息 -->
+    <select id="selectPostsByIds" resultMap="PostWithUserMap">
+        SELECT 
+            p.id, p.user_id, p.title, p.subtitle, p.content, p.images, p.tag,
+            p.likes_count, p.stars_count, p.comments_count, p.status,
+            p.created_at, p.updated_at,
+            u.username, u.nickname, u.avatar
+        FROM posts p
+        LEFT JOIN users u ON p.user_id = u.id
+        WHERE p.id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        ORDER BY p.created_at DESC
+    </select>
+
+    <!-- 更新帖子点赞数 -->
+    <update id="updateLikesCount">
+        UPDATE posts 
+        SET likes_count = GREATEST(likes_count + #{delta}, 0), updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 更新帖子收藏数 -->
+    <update id="updateStarsCount">
+        UPDATE posts 
+        SET stars_count = GREATEST(stars_count + #{delta}, 0), updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 更新帖子评论数 -->
+    <update id="updateCommentsCount">
+        UPDATE posts 
+        SET comments_count = GREATEST(comments_count + #{delta}, 0), updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 检查用户是否是帖子作者 -->
+    <select id="isPostOwner" resultType="boolean">
+        SELECT COUNT(1) > 0
+        FROM posts
+        WHERE id = #{postId} AND user_id = #{userId}
+    </select>
+
+    <!-- ==================== 管理员功能相关方法 ==================== -->
+
+    <!-- 获取待审核帖子列表 -->
+    <select id="selectPendingPosts" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List" />
+        FROM posts
+        WHERE status = 'draft'
+        ORDER BY created_at ASC
+        <if test="page != null and size != null">
+            LIMIT #{size} OFFSET #{page}
+        </if>
+    </select>
+
+    <!-- 统计待审核帖子数量 -->
+    <select id="countPendingPosts" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM posts
+        WHERE status = 'draft'
+    </select>
+
+    <!-- 按时间范围统计帖子数量 -->
+    <select id="countPostsByTimeRange" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM posts
+        WHERE 1=1
+        <choose>
+            <when test="timeRange == 'today'">
+                AND DATE(created_at) = CURDATE()
+            </when>
+            <when test="timeRange == 'yesterday'">
+                AND DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+            </when>
+            <when test="timeRange == 'week'">
+                AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+            </when>
+            <when test="timeRange == 'month'">
+                AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+            </when>
+            <when test="timeRange == 'year'">
+                AND created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+            </when>
+        </choose>
+    </select>
+
+    <!-- 获取热门帖子 -->
+    <select id="selectHotPosts" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List" />
+        FROM posts
+        WHERE status = 'published'
+        ORDER BY likes_count DESC, comments_count DESC, created_at DESC
+        <if test="limit != null and limit > 0">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- ==================== 搜索相关SQL ==================== -->
+
+    <!-- 全文搜索帖子 -->
+    <select id="searchPostsByKeyword" resultMap="PostWithUserInfoMap">
+        SELECT 
+        <include refid="Base_Column_List" />,
+        u.username,
+        u.nickname,
+        u.avatar,
+        u.school
+        FROM posts p
+        LEFT JOIN users u ON p.user_id = u.id
+        WHERE p.status = 'published'
+        AND (
+            MATCH(p.title) AGAINST(#{keyword} IN BOOLEAN MODE) * 3 +
+            MATCH(p.content) AGAINST(#{keyword} IN BOOLEAN MODE) * 1 > 0
+        )
+        ORDER BY (
+            MATCH(p.title) AGAINST(#{keyword} IN BOOLEAN MODE) * 3 +
+            MATCH(p.content) AGAINST(#{keyword} IN BOOLEAN MODE) * 1
+        ) DESC, p.created_at DESC
+        LIMIT #{page}, #{size}
+    </select>
+
+    <!-- 全文搜索帖子（带用户信息） -->
+    <select id="searchPostsWithUserByKeyword" resultMap="PostWithUserInfoMap">
+        SELECT 
+        <include refid="Base_Column_List" />,
+        u.username,
+        u.nickname,
+        u.avatar,
+        u.school,
+        u.mbti,
+        u.location
+        FROM posts p
+        LEFT JOIN users u ON p.user_id = u.id
+        WHERE p.status = 'published'
+        AND (
+            MATCH(p.title) AGAINST(#{keyword} IN BOOLEAN MODE) * 3 +
+            MATCH(p.content) AGAINST(#{keyword} IN BOOLEAN MODE) * 1 > 0
+        )
+        ORDER BY (
+            MATCH(p.title) AGAINST(#{keyword} IN BOOLEAN MODE) * 3 +
+            MATCH(p.content) AGAINST(#{keyword} IN BOOLEAN MODE) * 1
+        ) DESC, p.created_at DESC
+        LIMIT #{page}, #{size}
+    </select>
+
+    <!-- 统计搜索结果数量 -->
+    <select id="countSearchPostsByKeyword" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM posts p
+        WHERE p.status = 'published'
+        AND (
+            MATCH(p.title) AGAINST(#{keyword} IN BOOLEAN MODE) * 3 +
+            MATCH(p.content) AGAINST(#{keyword} IN BOOLEAN MODE) * 1 > 0
+        )
+    </select>
+
+    <!-- 按标签搜索帖子 -->
+    <select id="selectPostsByTags" resultMap="PostWithUserInfoMap">
+        SELECT 
+        <include refid="Base_Column_List" />,
+        u.username,
+        u.nickname,
+        u.avatar,
+        u.school
+        FROM posts p
+        LEFT JOIN users u ON p.user_id = u.id
+        WHERE p.status = 'published'
+        <if test="tags != null and tags.size() > 0">
+            AND (
+            <foreach collection="tags" item="tag" separator=" OR ">
+                p.tags LIKE CONCAT('%', #{tag}, '%')
+            </foreach>
+            )
+        </if>
+        ORDER BY p.created_at DESC
+        LIMIT #{page}, #{size}
+    </select>
+
+    <!-- 按用户搜索帖子 -->
+    <select id="selectPostsByUser" resultMap="PostWithUserInfoMap">
+        SELECT 
+        <include refid="Base_Column_List" />,
+        u.username,
+        u.nickname,
+        u.avatar,
+        u.school
+        FROM posts p
+        LEFT JOIN users u ON p.user_id = u.id
+        WHERE p.user_id = #{userId}
+        AND p.status = 'published'
+        ORDER BY p.created_at DESC
+        LIMIT #{page}, #{size}
+    </select>
+
+    <!-- 获取相关帖子（基于标签或关键词） -->
+    <select id="selectRelatedPosts" resultMap="PostWithUserInfoMap">
+        SELECT 
+        <include refid="Base_Column_List" />,
+        u.username,
+        u.nickname,
+        u.avatar,
+        u.school
+        FROM posts p
+        LEFT JOIN users u ON p.user_id = u.id
+        WHERE p.id != #{postId}
+        AND p.status = 'published'
+        AND (
+            p.tags LIKE (SELECT tags FROM posts WHERE id = #{postId})
+            OR MATCH(p.title, p.content) AGAINST(
+                (SELECT title FROM posts WHERE id = #{postId}) IN BOOLEAN MODE
+            )
+        )
+        ORDER BY p.created_at DESC
+        <if test="limit != null and limit > 0">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+</mapper>

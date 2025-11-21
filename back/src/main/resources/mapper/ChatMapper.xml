@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xystapp.mapper.ChatMapper">
+
+    <!-- 聊天结果映射（包含用户信息） -->
+    <resultMap id="ChatWithUserInfoMap" type="com.xystapp.entity.Chat">
+        <id column="id" property="id"/>
+        <result column="type" property="type"/>
+        <result column="name" property="name"/>
+        <result column="avatar" property="avatar"/>
+        <result column="notice" property="notice"/>
+        <result column="activity" property="activity"/>
+        <result column="group_field" property="groupField"/>
+        <result column="description" property="description"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+        
+        <!-- 私聊对方用户信息 -->
+        <result column="other_user_id" property="otherUserId"/>
+        <result column="other_username" property="otherUsername"/>
+        <result column="other_nickname" property="otherNickname"/>
+        <result column="other_avatar" property="otherUserAvatar"/>
+        
+        <!-- 成员数量 -->
+        <result column="member_count" property="memberCount"/>
+        
+        <!-- 未读消息数 -->
+        <result column="unread_count" property="unreadCount"/>
+    </resultMap>
+
+    <!-- 获取聊天详情（包含用户信息） -->
+    <select id="selectChatWithUserInfo" resultMap="ChatWithUserInfoMap">
+        SELECT 
+            c.id, c.type, c.name, c.avatar, c.notice, c.activity, c.group_field, c.description, c.created_at, c.updated_at,
+            CASE 
+                WHEN c.type = 'private' THEN (
+                    SELECT u.id 
+                    FROM chat_members cm1
+                    INNER JOIN users u ON cm1.user_id = u.id
+                    WHERE cm1.chat_id = c.id AND cm1.user_id != #{userId}
+                    LIMIT 1
+                )
+                ELSE NULL
+            END as other_user_id,
+            CASE 
+                WHEN c.type = 'private' THEN (
+                    SELECT u.username
+                    FROM chat_members cm1
+                    INNER JOIN users u ON cm1.user_id = u.id
+                    WHERE cm1.chat_id = c.id AND cm1.user_id != #{userId}
+                    LIMIT 1
+                )
+                ELSE NULL
+            END as other_username,
+            CASE 
+                WHEN c.type = 'private' THEN (
+                    SELECT u.nickname
+                    FROM chat_members cm1
+                    INNER JOIN users u ON cm1.user_id = u.id
+                    WHERE cm1.chat_id = c.id AND cm1.user_id != #{userId}
+                    LIMIT 1
+                )
+                ELSE NULL
+            END as other_nickname,
+            CASE 
+                WHEN c.type = 'private' THEN (
+                    SELECT u.avatar
+                    FROM chat_members cm1
+                    INNER JOIN users u ON cm1.user_id = u.id
+                    WHERE cm1.chat_id = c.id AND cm1.user_id != #{userId}
+                    LIMIT 1
+                )
+                ELSE NULL
+            END as other_avatar,
+            (SELECT COUNT(1) FROM chat_members WHERE chat_id = c.id) as member_count,
+            (SELECT unread_count FROM chat_members WHERE chat_id = c.id AND user_id = #{userId}) as unread_count
+        FROM chats c
+        INNER JOIN chat_members cm ON c.id = cm.chat_id
+        WHERE c.id = #{chatId} AND cm.user_id = #{userId}
+    </select>
+
+    <!-- 获取用户聊天列表（包含最后一条消息） -->
+    <select id="selectUserChatList" resultMap="ChatWithUserInfoMap">
+        SELECT 
+            c.id, c.type, c.name, c.avatar, c.notice, c.activity, c.group_field, c.description, c.created_at, c.updated_at,
+            CASE 
+                WHEN c.type = 'private' THEN (
+                    SELECT u.id 
+                    FROM chat_members cm1
+                    INNER JOIN users u ON cm1.user_id = u.id
+                    WHERE cm1.chat_id = c.id AND cm1.user_id != #{userId}
+                    LIMIT 1
+                )
+                ELSE NULL
+            END as other_user_id,
+            CASE 
+                WHEN c.type = 'private' THEN (
+                    SELECT u.username
+                    FROM chat_members cm1
+                    INNER JOIN users u ON cm1.user_id = u.id
+                    WHERE cm1.chat_id = c.id AND cm1.user_id != #{userId}
+                    LIMIT 1
+                )
+                ELSE NULL
+            END as other_username,
+            CASE 
+                WHEN c.type = 'private' THEN (
+                    SELECT u.nickname
+                    FROM chat_members cm1
+                    INNER JOIN users u ON cm1.user_id = u.id
+                    WHERE cm1.chat_id = c.id AND cm1.user_id != #{userId}
+                    LIMIT 1
+                )
+                ELSE NULL
+            END as other_nickname,
+            CASE 
+                WHEN c.type = 'private' THEN (
+                    SELECT u.avatar
+                    FROM chat_members cm1
+                    INNER JOIN users u ON cm1.user_id = u.id
+                    WHERE cm1.chat_id = c.id AND cm1.user_id != #{userId}
+                    LIMIT 1
+                )
+                ELSE NULL
+            END as other_avatar,
+            (SELECT COUNT(1) FROM chat_members WHERE chat_id = c.id) as member_count,
+            cm.unread_count
+        FROM chats c
+        INNER JOIN chat_members cm ON c.id = cm.chat_id
+        WHERE cm.user_id = #{userId}
+        ORDER BY c.updated_at DESC
+    </select>
+
+    <!-- 批量获取聊天信息 -->
+    <select id="selectChatsByIds" resultMap="ChatWithUserInfoMap">
+        SELECT 
+            c.id, c.type, c.name, c.avatar, c.notice, c.activity, c.group_field, c.description, c.created_at, c.updated_at,
+            CASE 
+                WHEN c.type = 'private' THEN (
+                    SELECT u.id 
+                    FROM chat_members cm1
+                    INNER JOIN users u ON cm1.user_id = u.id
+                    WHERE cm1.chat_id = c.id AND cm1.user_id != #{userId}
+                    LIMIT 1
+                )
+                ELSE NULL
+            END as other_user_id,
+            CASE 
+                WHEN c.type = 'private' THEN (
+                    SELECT u.username
+                    FROM chat_members cm1
+                    INNER JOIN users u ON cm1.user_id = u.id
+                    WHERE cm1.chat_id = c.id AND cm1.user_id != #{userId}
+                    LIMIT 1
+                )
+                ELSE NULL
+            END as other_username,
+            CASE 
+                WHEN c.type = 'private' THEN (
+                    SELECT u.nickname
+                    FROM chat_members cm1
+                    INNER JOIN users u ON cm1.user_id = u.id
+                    WHERE cm1.chat_id = c.id AND cm1.user_id != #{userId}
+                    LIMIT 1
+                )
+                ELSE NULL
+            END as other_nickname,
+            CASE 
+                WHEN c.type = 'private' THEN (
+                    SELECT u.avatar
+                    FROM chat_members cm1
+                    INNER JOIN users u ON cm1.user_id = u.id
+                    WHERE cm1.chat_id = c.id AND cm1.user_id != #{userId}
+                    LIMIT 1
+                )
+                ELSE NULL
+            END as other_avatar,
+            (SELECT COUNT(1) FROM chat_members WHERE chat_id = c.id) as member_count,
+            (SELECT unread_count FROM chat_members WHERE chat_id = c.id AND user_id = #{userId}) as unread_count
+        FROM chats c
+        INNER JOIN chat_members cm ON c.id = cm.chat_id
+        WHERE c.id IN
+        <foreach collection="chatIds" item="chatId" open="(" separator="," close=")">
+            #{chatId}
+        </foreach>
+        AND cm.user_id = #{userId}
+        ORDER BY c.updated_at DESC
+    </select>
+
+    <!-- 获取活跃聊天列表 -->
+    <select id="selectActiveChats" resultMap="ChatWithUserInfoMap">
+        SELECT 
+            c.id, c.type, c.name, c.avatar, c.notice, c.activity, c.group_field, c.description, c.created_at, c.updated_at,
+            CASE 
+                WHEN c.type = 'private' THEN (
+                    SELECT u.id 
+                    FROM chat_members cm1
+                    INNER JOIN users u ON cm1.user_id = u.id
+                    WHERE cm1.chat_id = c.id AND cm1.user_id != #{userId}
+                    LIMIT 1
+                )
+                ELSE NULL
+            END as other_user_id,
+            CASE 
+                WHEN c.type = 'private' THEN (
+                    SELECT u.username
+                    FROM chat_members cm1
+                    INNER JOIN users u ON cm1.user_id = u.id
+                    WHERE cm1.chat_id = c.id AND cm1.user_id != #{userId}
+                    LIMIT 1
+                )
+                ELSE NULL
+            END as other_username,
+            CASE 
+                WHEN c.type = 'private' THEN (
+                    SELECT u.nickname
+                    FROM chat_members cm1
+                    INNER JOIN users u ON cm1.user_id = u.id
+                    WHERE cm1.chat_id = c.id AND cm1.user_id != #{userId}
+                    LIMIT 1
+                )
+                ELSE NULL
+            END as other_nickname,
+            CASE 
+                WHEN c.type = 'private' THEN (
+                    SELECT u.avatar
+                    FROM chat_members cm1
+                    INNER JOIN users u ON cm1.user_id = u.id
+                    WHERE cm1.chat_id = c.id AND cm1.user_id != #{userId}
+                    LIMIT 1
+                )
+                ELSE NULL
+            END as other_avatar,
+            (SELECT COUNT(1) FROM chat_members WHERE chat_id = c.id) as member_count,
+            cm.unread_count
+        FROM chats c
+        INNER JOIN chat_members cm ON c.id = cm.chat_id
+        WHERE cm.user_id = #{userId}
+        AND EXISTS (SELECT 1 FROM messages WHERE chat_id = c.id)
+        ORDER BY c.updated_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 更新聊天最后消息时间 -->
+    <update id="updateLastMessageTime">
+        UPDATE chats 
+        SET updated_at = NOW()
+        WHERE id = #{chatId}
+    </update>
+
+    <!-- 获取私聊信息（包含对方用户信息） -->
+    <select id="selectPrivateChatWithOtherUser" resultMap="ChatWithUserInfoMap">
+        SELECT 
+            c.id, c.type, c.name, c.avatar, c.notice, c.activity, c.group_field, c.description, c.created_at, c.updated_at,
+            u.id as other_user_id,
+            u.username as other_username,
+            u.nickname as other_nickname,
+            u.avatar as other_avatar,
+            2 as member_count,
+            cm.unread_count
+        FROM chats c
+        INNER JOIN chat_members cm ON c.id = cm.chat_id
+        INNER JOIN chat_members cm_other ON c.id = cm_other.chat_id AND cm_other.user_id != #{userId}
+        INNER JOIN users u ON cm_other.user_id = u.id
+        WHERE c.id = #{chatId} AND cm.user_id = #{userId} AND c.type = 'private'
+    </select>
+
+    <!-- 检查聊天是否存在 -->
+    <select id="chatExists" resultType="boolean">
+        SELECT COUNT(1) > 0 FROM chats WHERE id = #{chatId}
+    </select>
+
+    <!-- 获取聊天类型 -->
+    <select id="selectChatType" resultType="string">
+        SELECT type FROM chats WHERE id = #{chatId}
+    </select>
+
+    <!-- 获取聊天成员数量 -->
+    <select id="selectMemberCount" resultType="integer">
+        SELECT COUNT(1) FROM chat_members WHERE chat_id = #{chatId}
+    </select>
+
+    <!-- 更新聊天信息 -->
+    <update id="updateChatInfo">
+        UPDATE chats 
+        SET 
+            <if test="name != null">name = #{name},</if>
+            <if test="avatar != null">avatar = #{avatar},</if>
+            <if test="notice != null">notice = #{notice},</if>
+            updated_at = NOW()
+        WHERE id = #{chatId}
+    </update>
+
+</mapper>

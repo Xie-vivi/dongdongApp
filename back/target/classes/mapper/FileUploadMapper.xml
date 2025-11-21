@@ -1,0 +1,504 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xystapp.mapper.FileUploadMapper">
+
+    <!-- 文件上传基础结果映射 -->
+    <resultMap id="BaseResultMap" type="com.xystapp.entity.FileUpload">
+        <id column="id" property="id" />
+        <result column="original_name" property="originalName" />
+        <result column="file_name" property="fileName" />
+        <result column="file_path" property="filePath" />
+        <result column="file_size" property="fileSize" />
+        <result column="file_type" property="fileType" />
+        <result column="mime_type" property="mimeType" />
+        <result column="upload_user_id" property="uploadUserId" />
+        <result column="related_type" property="relatedType" />
+        <result column="related_id" property="relatedId" />
+        <result column="status" property="status" />
+        <result column="upload_ip" property="uploadIp" />
+        <result column="user_agent" property="userAgent" />
+        <result column="created_at" property="createdAt" />
+        <result column="updated_at" property="updatedAt" />
+    </resultMap>
+
+    <!-- 文件详情结果映射（包含用户信息） -->
+    <resultMap id="FileDetailMap" type="com.xystapp.entity.FileUpload" extends="BaseResultMap">
+        <result column="upload_username" property="uploadUsername" />
+        <result column="upload_user_nickname" property="uploadUserNickname" />
+        <result column="upload_user_avatar" property="uploadUserAvatar" />
+        <result column="file_extension" property="fileExtension" />
+        <result column="readable_file_size" property="readableFileSize" />
+        <result column="is_image" property="isImage" />
+        <result column="image_width" property="imageWidth" />
+        <result column="image_height" property="imageHeight" />
+        <result column="thumbnail_path" property="thumbnailPath" />
+        <result column="thumbnail_url" property="thumbnailUrl" />
+        <result column="file_url" property="fileUrl" />
+    </resultMap>
+
+    <!-- 文件基础列 -->
+    <sql id="Base_Column_List">
+        id, original_name, file_name, file_path, file_size, file_type, mime_type,
+        upload_user_id, related_type, related_id, status, upload_ip, user_agent,
+        created_at, updated_at
+    </sql>
+
+    <!-- 文件详情列 -->
+    <sql id="Detail_Column_List">
+        f.id, f.original_name, f.file_name, f.file_path, f.file_size, f.file_type, f.mime_type,
+        f.upload_user_id, f.related_type, f.related_id, f.status, f.upload_ip, f.user_agent,
+        f.created_at, f.updated_at,
+        u.username as upload_username,
+        u.nickname as upload_user_nickname,
+        u.avatar as upload_user_avatar,
+        CASE 
+            WHEN f.original_name LIKE '%.%' THEN SUBSTRING_INDEX(f.original_name, '.', -1)
+            ELSE ''
+        END as file_extension,
+        CASE 
+            WHEN f.file_size &lt; 1024 THEN CONCAT(f.file_size, ' B')
+            WHEN f.file_size &lt; 1024 * 1024 THEN CONCAT(ROUND(f.file_size / 1024.0, 1), ' KB')
+            WHEN f.file_size &lt; 1024 * 1024 * 1024 THEN CONCAT(ROUND(f.file_size / (1024.0 * 1024), 1), ' MB')
+            ELSE CONCAT(ROUND(f.file_size / (1024.0 * 1024 * 1024), 1), ' GB')
+        END as readable_file_size,
+        CASE 
+            WHEN f.mime_type LIKE 'image/%' THEN true
+            ELSE false
+        END as is_image,
+        t.width as image_width,
+        t.height as image_height,
+        t.thumbnail_path,
+        CONCAT('/uploads/', f.file_path) as file_url,
+        CASE 
+            WHEN t.thumbnail_path IS NOT NULL THEN CONCAT('/uploads/', t.thumbnail_path)
+            ELSE CONCAT('/uploads/', f.file_path)
+        END as thumbnail_url
+    </sql>
+
+    <!-- 根据ID获取文件详情（包含用户信息） -->
+    <select id="selectFileDetail" resultMap="FileDetailMap">
+        SELECT 
+        <include refid="Detail_Column_List" />
+        FROM file_uploads f
+        LEFT JOIN users u ON f.upload_user_id = u.id
+        LEFT JOIN file_thumbnails t ON f.id = t.file_id
+        WHERE f.id = #{fileId}
+    </select>
+
+    <!-- 获取用户上传的文件列表（包含用户信息） -->
+    <select id="selectUserFiles" resultMap="FileDetailMap">
+        SELECT 
+        <include refid="Detail_Column_List" />
+        FROM file_uploads f
+        LEFT JOIN users u ON f.upload_user_id = u.id
+        LEFT JOIN file_thumbnails t ON f.id = t.file_id
+        WHERE f.upload_user_id = #{userId}
+        <if test="fileType != null and fileType != ''">
+            AND f.file_type = #{fileType}
+        </if>
+        ORDER BY f.created_at DESC
+    </select>
+
+    <!-- 获取关联类型的文件列表（包含用户信息） -->
+    <select id="selectRelatedFiles" resultMap="FileDetailMap">
+        SELECT 
+        <include refid="Detail_Column_List" />
+        FROM file_uploads f
+        LEFT JOIN users u ON f.upload_user_id = u.id
+        LEFT JOIN file_thumbnails t ON f.id = t.file_id
+        WHERE f.related_type = #{relatedType}
+        <if test="relatedId != null">
+            AND f.related_id = #{relatedId}
+        </if>
+        ORDER BY f.created_at DESC
+    </select>
+
+    <!-- 获取文件列表（管理员用，包含用户信息） -->
+    <select id="selectFileList" resultMap="FileDetailMap">
+        SELECT 
+        <include refid="Detail_Column_List" />
+        FROM file_uploads f
+        LEFT JOIN users u ON f.upload_user_id = u.id
+        LEFT JOIN file_thumbnails t ON f.id = t.file_id
+        WHERE 1=1
+        <if test="keyword != null and keyword != ''">
+            AND (f.original_name LIKE CONCAT('%', #{keyword}, '%') 
+                 OR u.username LIKE CONCAT('%', #{keyword}, '%')
+                 OR u.nickname LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        <if test="fileType != null and fileType != ''">
+            AND f.file_type = #{fileType}
+        </if>
+        <if test="status != null and status != ''">
+            AND f.status = #{status}
+        </if>
+        ORDER BY f.created_at DESC
+    </select>
+
+    <!-- ==================== 统计相关 ==================== -->
+
+    <!-- 统计用户文件数量 -->
+    <select id="countUserFiles" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM file_uploads
+        WHERE upload_user_id = #{userId}
+        <if test="fileType != null and fileType != ''">
+            AND file_type = #{fileType}
+        </if>
+    </select>
+
+    <!-- 统计用户文件总大小 -->
+    <select id="sumUserFileSize" resultType="java.lang.Long">
+        SELECT COALESCE(SUM(file_size), 0)
+        FROM file_uploads
+        WHERE upload_user_id = #{userId}
+        <if test="fileType != null and fileType != ''">
+            AND file_type = #{fileType}
+        </if>
+    </select>
+
+    <!-- 统计系统文件数量 -->
+    <select id="countSystemFiles" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM file_uploads
+        WHERE 1=1
+        <if test="fileType != null and fileType != ''">
+            AND file_type = #{fileType}
+        </if>
+        <if test="status != null and status != ''">
+            AND status = #{status}
+        </if>
+    </select>
+
+    <!-- 统计系统文件总大小 -->
+    <select id="sumSystemFileSize" resultType="java.lang.Long">
+        SELECT COALESCE(SUM(file_size), 0)
+        FROM file_uploads
+        WHERE 1=1
+        <if test="fileType != null and fileType != ''">
+            AND file_type = #{fileType}
+        </if>
+        <if test="status != null and status != ''">
+            AND status = #{status}
+        </if>
+    </select>
+
+    <!-- 统计今日上传数量 -->
+    <select id="countTodayUploads" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM file_uploads
+        WHERE DATE(created_at) = CURDATE()
+        <if test="userId != null">
+            AND upload_user_id = #{userId}
+        </if>
+    </select>
+
+    <!-- 统计今日上传大小 -->
+    <select id="sumTodayUploadSize" resultType="java.lang.Long">
+        SELECT COALESCE(SUM(file_size), 0)
+        FROM file_uploads
+        WHERE DATE(created_at) = CURDATE()
+        <if test="userId != null">
+            AND upload_user_id = #{userId}
+        </if>
+    </select>
+
+    <!-- 按文件类型统计 -->
+    <select id="selectFileTypeStats" resultType="com.xystapp.mapper.FileUploadMapper$FileTypeStats">
+        SELECT 
+            file_type as fileType,
+            CASE file_type
+                WHEN 'image' THEN '图片'
+                WHEN 'document' THEN '文档'
+                WHEN 'video' THEN '视频'
+                WHEN 'audio' THEN '音频'
+                ELSE '其他'
+            END as description,
+            COUNT(*) as count,
+            COALESCE(SUM(file_size), 0) as totalSize
+        FROM file_uploads
+        WHERE status = 'uploaded'
+        GROUP BY file_type
+        ORDER BY count DESC
+    </select>
+
+    <!-- 获取文件上传统计 -->
+    <select id="selectFileUploadTrend" resultType="com.xystapp.mapper.FileUploadMapper$FileUploadTrendStats">
+        SELECT 
+            DATE(created_at) as date,
+            COUNT(*) as uploadCount,
+            COALESCE(SUM(file_size), 0) as totalSize
+        FROM file_uploads
+        WHERE created_at >= DATE_SUB(NOW(), INTERVAL #{days} DAY)
+        AND status = 'uploaded'
+        GROUP BY DATE(created_at)
+        ORDER BY date DESC
+    </select>
+
+    <!-- ==================== 业务查询 ==================== -->
+
+    <!-- 获取用户头像 -->
+    <select id="selectUserAvatar" resultMap="FileDetailMap">
+        SELECT 
+        <include refid="Detail_Column_List" />
+        FROM file_uploads f
+        LEFT JOIN users u ON f.upload_user_id = u.id
+        LEFT JOIN file_thumbnails t ON f.id = t.file_id
+        WHERE f.related_type = 'user_avatar' AND f.related_id = #{userId}
+        AND f.status = 'uploaded'
+        ORDER BY f.created_at DESC
+        LIMIT 1
+    </select>
+
+    <!-- 获取帖子图片列表 -->
+    <select id="selectPostImages" resultMap="FileDetailMap">
+        SELECT 
+        <include refid="Detail_Column_List" />
+        FROM file_uploads f
+        LEFT JOIN users u ON f.upload_user_id = u.id
+        LEFT JOIN file_thumbnails t ON f.id = t.file_id
+        WHERE f.related_type = 'post_image' AND f.related_id = #{postId}
+        AND f.status = 'uploaded'
+        ORDER BY f.created_at ASC
+    </select>
+
+    <!-- 获取活动图片列表 -->
+    <select id="selectActivityImages" resultMap="FileDetailMap">
+        SELECT 
+        <include refid="Detail_Column_List" />
+        FROM file_uploads f
+        LEFT JOIN users u ON f.upload_user_id = u.id
+        LEFT JOIN file_thumbnails t ON f.id = t.file_id
+        WHERE f.related_type = 'activity_image' AND f.related_id = #{activityId}
+        AND f.status = 'uploaded'
+        ORDER BY f.created_at ASC
+    </select>
+
+    <!-- 获取场地头像 -->
+    <select id="selectFieldAvatar" resultMap="FileDetailMap">
+        SELECT 
+        <include refid="Detail_Column_List" />
+        FROM file_uploads f
+        LEFT JOIN users u ON f.upload_user_id = u.id
+        LEFT JOIN file_thumbnails t ON f.id = t.file_id
+        WHERE f.related_type = 'field_avatar' AND f.related_id = #{fieldId}
+        AND f.status = 'uploaded'
+        ORDER BY f.created_at DESC
+        LIMIT 1
+    </select>
+
+    <!-- 获取最近上传的文件 -->
+    <select id="selectRecentFiles" resultMap="FileDetailMap">
+        SELECT 
+        <include refid="Detail_Column_List" />
+        FROM file_uploads f
+        LEFT JOIN users u ON f.upload_user_id = u.id
+        LEFT JOIN file_thumbnails t ON f.id = t.file_id
+        WHERE f.status = 'uploaded'
+        <if test="userId != null">
+            AND f.upload_user_id = #{userId}
+        </if>
+        ORDER BY f.created_at DESC
+        <if test="limit != null and limit > 0">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 根据文件路径获取文件信息 -->
+    <select id="selectByFilePath" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List" />
+        FROM file_uploads
+        WHERE file_path = #{filePath}
+    </select>
+
+    <!-- 获取用户指定类型的文件 -->
+    <select id="selectUserFilesByType" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List" />
+        FROM file_uploads
+        WHERE upload_user_id = #{userId} AND related_type = #{relatedType}
+        AND status = 'uploaded'
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- ==================== 批量操作 ==================== -->
+
+    <!-- 批量获取文件信息 -->
+    <select id="selectFilesByIds" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List" />
+        FROM file_uploads
+        WHERE id IN
+        <foreach collection="fileIds" item="fileId" open="(" separator="," close=")">
+            #{fileId}
+        </foreach>
+    </select>
+
+    <!-- 批量获取用户文件 -->
+    <select id="selectUserFilesByIds" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List" />
+        FROM file_uploads
+        WHERE id IN
+        <foreach collection="fileIds" item="fileId" open="(" separator="," close=")">
+            #{fileId}
+        </foreach>
+        AND upload_user_id = #{userId}
+    </select>
+
+    <!-- 根据关联ID删除文件记录 -->
+    <delete id="deleteByRelatedId">
+        DELETE FROM file_uploads 
+        WHERE related_type = #{relatedType} 
+        <if test="relatedId != null">
+            AND related_id = #{relatedId}
+        </if>
+    </delete>
+
+    <!-- 根据用户ID删除文件记录 -->
+    <delete id="deleteByUserId">
+        DELETE FROM file_uploads WHERE upload_user_id = #{userId}
+    </delete>
+
+    <!-- ==================== 数据维护 ==================== -->
+
+    <!-- 清理无效文件记录（文件不存在） -->
+    <delete id="cleanupInvalidFiles">
+        DELETE FROM file_uploads 
+        WHERE status = 'failed' 
+        OR (status = 'uploading' AND created_at &lt; DATE_SUB(NOW(), INTERVAL 1 HOUR))
+    </delete>
+
+    <!-- 清理临时文件记录 -->
+    <delete id="cleanupTempFiles">
+        DELETE FROM file_uploads 
+        WHERE status = 'uploading' 
+        AND created_at &lt; DATE_SUB(NOW(), INTERVAL #{hours} HOUR)
+    </delete>
+
+    <!-- 获取需要清理的文件数量 -->
+    <select id="countFilesToCleanup" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM file_uploads
+        WHERE (status = 'deleted' AND updated_at &lt; DATE_SUB(NOW(), INTERVAL #{days} DAY))
+        OR (status = 'failed' AND created_at &lt; DATE_SUB(NOW(), INTERVAL #{days} DAY))
+    </select>
+
+    <!-- 获取孤立文件记录（用户不存在） -->
+    <select id="selectOrphanedFiles" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List" />
+        FROM file_uploads f
+        LEFT JOIN users u ON f.upload_user_id = u.id
+        WHERE u.id IS NULL
+        ORDER BY f.created_at ASC
+    </select>
+
+    <!-- ==================== 存储相关 ==================== -->
+
+    <!-- 获取存储使用统计 -->
+    <select id="selectStorageUsageStats" resultType="com.xystapp.mapper.FileUploadMapper$StorageUsageStats">
+        SELECT 
+            COUNT(*) as totalFiles,
+            COALESCE(SUM(file_size), 0) as totalSize,
+            (SELECT COUNT(*) FROM file_uploads WHERE DATE(created_at) = CURDATE() AND status = 'uploaded') as todayUploads,
+            (SELECT COUNT(*) FROM file_uploads WHERE status = 'uploaded') as activeFiles,
+            (SELECT COUNT(*) FROM file_uploads WHERE status = 'deleted') as deletedFiles
+        FROM file_uploads
+    </select>
+
+    <!-- 获取用户存储使用统计 -->
+    <select id="selectUserStorageStats" resultType="com.xystapp.mapper.FileUploadMapper$UserStorageStats">
+        SELECT 
+            u.id as userId,
+            u.username,
+            u.nickname,
+            COUNT(f.id) as fileCount,
+            COALESCE(SUM(f.file_size), 0) as totalSize
+        FROM users u
+        LEFT JOIN file_uploads f ON u.id = f.upload_user_id AND f.status = 'uploaded'
+        GROUP BY u.id, u.username, u.nickname
+        HAVING fileCount > 0
+        ORDER BY totalSize DESC
+        <if test="limit != null and limit > 0">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 获取热门文件统计 -->
+    <select id="selectPopularFiles" resultMap="FileDetailMap">
+        SELECT 
+        <include refid="Detail_Column_List" />
+        FROM file_uploads f
+        LEFT JOIN users u ON f.upload_user_id = u.id
+        LEFT JOIN file_thumbnails t ON f.id = t.file_id
+        WHERE f.status = 'uploaded'
+        ORDER BY f.file_size DESC, f.created_at DESC
+        <if test="limit != null and limit > 0">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- ==================== 时间相关查询 ==================== -->
+
+    <!-- 获取指定时间段内的文件 -->
+    <select id="selectFilesByTimeRange" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List" />
+        FROM file_uploads
+        WHERE created_at BETWEEN #{startTime} AND #{endTime}
+        <if test="fileType != null and fileType != ''">
+            AND file_type = #{fileType}
+        </if>
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 获取用户指定时间段内的文件 -->
+    <select id="selectUserFilesByTimeRange" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List" />
+        FROM file_uploads
+        WHERE upload_user_id = #{userId}
+        AND created_at BETWEEN #{startTime} AND #{endTime}
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 获取即将过期的文件 -->
+    <select id="selectExpiringFiles" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List" />
+        FROM file_uploads
+        WHERE created_at &lt; DATE_SUB(NOW(), INTERVAL #{days} DAY)
+        AND status = 'uploaded'
+        ORDER BY created_at ASC
+    </select>
+
+    <!-- ==================== 权限相关 ==================== -->
+
+    <!-- 检查用户是否拥有文件 -->
+    <select id="isUserFile" resultType="boolean">
+        SELECT COUNT(1) > 0
+        FROM file_uploads
+        WHERE id = #{fileId} AND upload_user_id = #{userId}
+    </select>
+
+    <!-- 获取用户可访问的文件ID列表 -->
+    <select id="selectUserAccessibleFileIds" resultType="java.lang.Long">
+        SELECT id
+        FROM file_uploads
+        WHERE upload_user_id = #{userId}
+        OR related_type IN ('user_avatar', 'post_image', 'activity_image', 'field_avatar')
+        AND status = 'uploaded'
+    </select>
+
+    <!-- 获取用户管理的文件ID列表 -->
+    <select id="selectUserManagedFileIds" resultType="java.lang.Long">
+        SELECT id
+        FROM file_uploads
+        WHERE upload_user_id = #{userId}
+        OR related_type IN ('user_avatar', 'post_image', 'activity_image', 'field_avatar')
+        AND status = 'uploaded'
+    </select>
+
+</mapper>

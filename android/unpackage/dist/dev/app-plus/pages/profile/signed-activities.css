@@ -1,0 +1,203 @@
+
+.top-navigation-wrapper[data-v-11dc4142] {
+	background: #F6F2FC;
+}
+.status-bar[data-v-11dc4142] {
+	height: 2.75rem; /* 44px * 2 状态栏高度 */
+	background: #F6F2FC;
+}
+.top-nav[data-v-11dc4142] {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	height: 2.75rem;
+	padding: 0 1.25rem;
+	background: #F6F2FC;
+}
+.nav-left[data-v-11dc4142], .nav-right[data-v-11dc4142] {
+	width: 1.5rem;
+	height: 1.5rem;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+}
+.back-icon[data-v-11dc4142], .more-icon[data-v-11dc4142] {
+	width: 1.5rem;
+	height: 1.5rem;
+}
+.nav-center[data-v-11dc4142] {
+	flex: 1;
+	display: flex;
+	justify-content: center;
+}
+.nav-title[data-v-11dc4142] {
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-weight: 500;
+	font-size: 1rem;
+	line-height: 1.375rem;
+	text-align: center;
+}
+
+
+.container[data-v-551b4105] {
+	min-height: 100vh;
+	background: #F6F2FC;
+}
+.calendar-section[data-v-551b4105] {
+	background: #FFFFFF;
+	margin: 0 1.25rem 0.625rem;
+	border-radius: 0.625rem;
+	padding: 1.25rem;
+}
+.calendar-header[data-v-551b4105] {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 1.25rem;
+}
+.calendar-year-month[data-v-551b4105] {
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-size: 1.125rem;
+	line-height: 1.5rem;
+	color: #333333;
+	font-weight: 600;
+}
+.calendar-nav[data-v-551b4105] {
+	display: flex;
+	gap: 0.625rem;
+}
+.nav-btn[data-v-551b4105] {
+	width: 1.5rem;
+	height: 1.5rem;
+}
+.calendar-weekdays[data-v-551b4105] {
+	display: flex;
+	margin-bottom: 0.625rem;
+}
+.weekday[data-v-551b4105] {
+	flex: 1;
+	text-align: center;
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-size: 0.875rem;
+	line-height: 1.125rem;
+	color: #666666;
+}
+.calendar-days[data-v-551b4105] {
+	display: flex;
+	flex-wrap: wrap;
+}
+.calendar-day[data-v-551b4105] {
+	width: 14.28%;
+	height: 2.5rem;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin-bottom: 0.3125rem;
+}
+.calendar-day.other-month .day-number[data-v-551b4105] {
+	color: #CCCCCC;
+}
+.calendar-day.selected[data-v-551b4105] {
+	background: #EDE7F9;
+	border-radius: 0.375rem;
+}
+.calendar-day.has-activity[data-v-551b4105] {
+	background: #8A70C9;
+	border-radius: 0.375rem;
+}
+.calendar-day.has-activity .day-number[data-v-551b4105] {
+	color: #FFFFFF;
+}
+.day-number[data-v-551b4105] {
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-size: 0.875rem;
+	line-height: 1.125rem;
+	color: #333333;
+}
+.activities-section[data-v-551b4105] {
+	padding: 0 1.25rem;
+}
+.activity-item[data-v-551b4105] {
+	background: #FFFFFF;
+	border-radius: 0.625rem;
+	padding: 1.25rem;
+	margin-bottom: 0.625rem;
+	display: flex;
+}
+.activity-image[data-v-551b4105] {
+	width: 6.25rem;
+	height: 4.375rem;
+	border-radius: 0.5rem;
+	margin-right: 0.625rem;
+}
+.activity-content[data-v-551b4105] {
+	flex: 1;
+}
+.activity-header[data-v-551b4105] {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	margin-bottom: 0.375rem;
+}
+.activity-title[data-v-551b4105] {
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-size: 0.875rem;
+	line-height: 1.125rem;
+	color: #333333;
+	font-weight: 600;
+	flex: 1;
+	margin-right: 0.625rem;
+}
+.activity-like[data-v-551b4105] {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.125rem;
+}
+.heart-icon[data-v-551b4105] {
+	width: 1rem;
+	height: 1rem;
+}
+.like-count[data-v-551b4105] {
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-size: 0.625rem;
+	line-height: 0.75rem;
+	color: #333333;
+}
+.activity-datetime[data-v-551b4105] {
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-size: 0.75rem;
+	line-height: 1rem;
+	color: #8A70C9;
+	margin-bottom: 0.125rem;
+}
+.activity-location[data-v-551b4105] {
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-size: 0.75rem;
+	line-height: 1rem;
+	color: #666666;
+	margin-bottom: 0.375rem;
+}
+.activity-footer[data-v-551b4105] {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+.activity-tag[data-v-551b4105] {
+	background: #EDE7F9;
+	border-radius: 0.5rem;
+	padding: 0.25rem 0.5rem;
+}
+.tag-text[data-v-551b4105] {
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-size: 0.625rem;
+	line-height: 0.75rem;
+	color: #8A70C9;
+}
+.participants[data-v-551b4105] {
+	font-family: 'Alibaba PuHuiTi', sans-serif;
+	font-size: 0.75rem;
+	line-height: 1rem;
+	color: #8A70C9;
+}

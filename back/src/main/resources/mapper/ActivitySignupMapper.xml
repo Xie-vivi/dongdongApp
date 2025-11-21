@@ -1,0 +1,574 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xystapp.mapper.ActivitySignupMapper">
+
+    <!-- 活动报名结果映射（包含用户和活动信息） -->
+    <resultMap id="ActivitySignupWithUserInfoMap" type="com.xystapp.entity.ActivitySignup">
+        <id column="id" property="id"/>
+        <result column="activity_id" property="activityId"/>
+        <result column="user_id" property="userId"/>
+        <result column="status" property="status"/>
+        <result column="signup_time" property="signupTime"/>
+        <result column="cancel_time" property="cancelTime"/>
+        <result column="note" property="note"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+        
+        <!-- 用户信息 -->
+        <result column="username" property="username"/>
+        <result column="nickname" property="nickname"/>
+        <result column="avatar" property="avatar"/>
+        
+        <!-- 活动信息 -->
+        <result column="activity_title" property="activityTitle"/>
+        <result column="activity_time" property="activityTime"/>
+        <result column="activity_location" property="activityLocation"/>
+        <result column="activity_status" property="activityStatus"/>
+        <result column="activity_max_participants" property="activityMaxParticipants"/>
+        <result column="current_participants" property="currentParticipants"/>
+        <result column="signup_deadline" property="signupDeadline"/>
+        <result column="activity_creator_id" property="activityCreatorId"/>
+        <result column="activity_creator_username" property="activityCreatorUsername"/>
+    </resultMap>
+
+    <!-- 根据活动ID和用户ID获取报名记录 -->
+    <select id="selectByActivityIdAndUserId" resultMap="ActivitySignupWithUserInfoMap">
+        SELECT 
+            s.id, s.activity_id, s.user_id, s.status, s.signup_time, s.cancel_time, s.note, s.created_at, s.updated_at,
+            u.username, u.nickname, u.avatar,
+            a.title as activity_title,
+            CONCAT(a.date, ' ', a.time) as activity_time,
+            a.location as activity_location,
+            a.status as activity_status,
+            a.max_participants as activity_max_participants,
+            a.participants as current_participants,
+            a.signup_deadline,
+            a.user_id as activity_creator_id
+        FROM activity_signups s
+        INNER JOIN users u ON s.user_id = u.id
+        INNER JOIN activities a ON s.activity_id = a.id
+        WHERE s.activity_id = #{activityId} AND s.user_id = #{userId}
+    </select>
+
+    <!-- 获取报名详情（包含用户和活动信息） -->
+    <select id="selectSignupDetail" resultMap="ActivitySignupWithUserInfoMap">
+        SELECT 
+            s.id, s.activity_id, s.user_id, s.status, s.signup_time, s.cancel_time, s.note, s.created_at, s.updated_at,
+            u.username, u.nickname, u.avatar,
+            a.title as activity_title,
+            CONCAT(a.date, ' ', a.time) as activity_time,
+            a.location as activity_location,
+            a.status as activity_status,
+            a.max_participants as activity_max_participants,
+            a.participants as current_participants,
+            a.signup_deadline,
+            a.user_id as activity_creator_id,
+            creator.username as activity_creator_username
+        FROM activity_signups s
+        INNER JOIN users u ON s.user_id = u.id
+        INNER JOIN activities a ON s.activity_id = a.id
+        INNER JOIN users creator ON a.user_id = creator.id
+        WHERE s.activity_id = #{activityId} AND s.user_id = #{userId}
+    </select>
+
+    <!-- 获取活动报名列表（包含用户信息） -->
+    <select id="selectActivitySignups" resultMap="ActivitySignupWithUserInfoMap">
+        SELECT 
+            s.id, s.activity_id, s.user_id, s.status, s.signup_time, s.cancel_time, s.note, s.created_at, s.updated_at,
+            u.username, u.nickname, u.avatar,
+            a.title as activity_title,
+            CONCAT(a.date, ' ', a.time) as activity_time,
+            a.location as activity_location,
+            a.status as activity_status,
+            a.max_participants as activity_max_participants,
+            a.participants as current_participants,
+            a.signup_deadline,
+            a.user_id as activity_creator_id
+        FROM activity_signups s
+        INNER JOIN users u ON s.user_id = u.id
+        INNER JOIN activities a ON s.activity_id = a.id
+        WHERE s.activity_id = #{activityId}
+        <if test="status != null and status != ''">
+            AND s.status = #{status}
+        </if>
+        ORDER BY s.signup_time DESC
+    </select>
+
+    <!-- 获取用户报名列表（包含活动信息） -->
+    <select id="selectUserSignups" resultMap="ActivitySignupWithUserInfoMap">
+        SELECT 
+            s.id, s.activity_id, s.user_id, s.status, s.signup_time, s.cancel_time, s.note, s.created_at, s.updated_at,
+            u.username, u.nickname, u.avatar,
+            a.title as activity_title,
+            CONCAT(a.date, ' ', a.time) as activity_time,
+            a.location as activity_location,
+            a.status as activity_status,
+            a.max_participants as activity_max_participants,
+            a.participants as current_participants,
+            a.signup_deadline,
+            a.user_id as activity_creator_id
+        FROM activity_signups s
+        INNER JOIN users u ON s.user_id = u.id
+        INNER JOIN activities a ON s.activity_id = a.id
+        WHERE s.user_id = #{userId}
+        <if test="status != null and status != ''">
+            AND s.status = #{status}
+        </if>
+        ORDER BY s.signup_time DESC
+    </select>
+
+    <!-- ==================== 统计相关 ==================== -->
+
+    <!-- 统计活动报名数量 -->
+    <select id="countByActivityIdAndStatus" resultType="integer">
+        SELECT COUNT(1) 
+        FROM activity_signups 
+        WHERE activity_id = #{activityId}
+        <if test="status != null and status != ''">
+            AND status = #{status}
+        </if>
+    </select>
+
+    <!-- 统计用户报名数量 -->
+    <select id="countByUserIdAndStatus" resultType="integer">
+        SELECT COUNT(1) 
+        FROM activity_signups 
+        WHERE user_id = #{userId}
+        <if test="status != null and status != ''">
+            AND status = #{status}
+        </if>
+    </select>
+
+    <!-- 统计今日报名数量 -->
+    <select id="countTodaySignups" resultType="integer">
+        SELECT COUNT(1) 
+        FROM activity_signups 
+        WHERE activity_id = #{activityId}
+        AND DATE(signup_time) = CURDATE()
+    </select>
+
+    <!-- 统计用户本月报名数量 -->
+    <select id="countUserSignupsByMonth" resultType="long">
+        SELECT COUNT(1) 
+        FROM activity_signups 
+        WHERE user_id = #{userId}
+        AND YEAR(signup_time) = YEAR(CURDATE())
+        AND MONTH(signup_time) = MONTH(CURDATE())
+    </select>
+
+    <!-- 统计待审核报名数量 -->
+    <select id="countPendingSignups" resultType="integer">
+        SELECT COUNT(1) 
+        FROM activity_signups 
+        WHERE activity_id = #{activityId} AND status = 'pending'
+    </select>
+
+    <!-- ==================== 批量操作 ==================== -->
+
+    <!-- 批量获取报名记录 -->
+    <select id="selectSignupsByIds" resultMap="ActivitySignupWithUserInfoMap">
+        SELECT 
+            s.id, s.activity_id, s.user_id, s.status, s.signup_time, s.cancel_time, s.note, s.created_at, s.updated_at,
+            u.username, u.nickname, u.avatar,
+            a.title as activity_title,
+            CONCAT(a.date, ' ', a.time) as activity_time,
+            a.location as activity_location,
+            a.status as activity_status,
+            a.max_participants as activity_max_participants,
+            a.participants as current_participants,
+            a.signup_deadline,
+            a.user_id as activity_creator_id
+        FROM activity_signups s
+        INNER JOIN users u ON s.user_id = u.id
+        INNER JOIN activities a ON s.activity_id = a.id
+        WHERE s.id IN
+        <foreach collection="signupIds" item="signupId" open="(" separator="," close=")">
+            #{signupId}
+        </foreach>
+        ORDER BY s.signup_time DESC
+    </select>
+
+    <!-- 批量获取用户在指定活动中的报名信息 -->
+    <select id="selectUserSignupsByActivityIds" resultMap="ActivitySignupWithUserInfoMap">
+        SELECT 
+            s.id, s.activity_id, s.user_id, s.status, s.signup_time, s.cancel_time, s.note, s.created_at, s.updated_at,
+            u.username, u.nickname, u.avatar,
+            a.title as activity_title,
+            CONCAT(a.date, ' ', a.time) as activity_time,
+            a.location as activity_location,
+            a.status as activity_status,
+            a.max_participants as activity_max_participants,
+            a.participants as current_participants,
+            a.signup_deadline,
+            a.user_id as activity_creator_id
+        FROM activity_signups s
+        INNER JOIN users u ON s.user_id = u.id
+        INNER JOIN activities a ON s.activity_id = a.id
+        WHERE s.activity_id IN
+        <foreach collection="activityIds" item="activityId" open="(" separator="," close=")">
+            #{activityId}
+        </foreach>
+        AND s.user_id = #{userId}
+        ORDER BY s.signup_time DESC
+    </select>
+
+    <!-- 批量检查报名状态 -->
+    <select id="selectBatchSignupStatus" resultType="com.xystapp.service.ActivitySignupService$SignupStatusInfo">
+        SELECT 
+            s.activity_id as activityId,
+            a.title as activityTitle,
+            s.status as status,
+            s.signup_time as signupTime
+        FROM activity_signups s
+        INNER JOIN activities a ON s.activity_id = a.id
+        WHERE s.activity_id IN
+        <foreach collection="activityIds" item="activityId" open="(" separator="," close=")">
+            #{activityId}
+        </foreach>
+        AND s.user_id = #{userId}
+        ORDER BY s.signup_time DESC
+    </select>
+
+    <!-- ==================== 业务查询 ==================== -->
+
+    <!-- 获取最近报名的用户 -->
+    <select id="selectRecentSignups" resultMap="ActivitySignupWithUserInfoMap">
+        SELECT 
+            s.id, s.activity_id, s.user_id, s.status, s.signup_time, s.cancel_time, s.note, s.created_at, s.updated_at,
+            u.username, u.nickname, u.avatar,
+            a.title as activity_title,
+            CONCAT(a.date, ' ', a.time) as activity_time,
+            a.location as activity_location,
+            a.status as activity_status,
+            a.max_participants as activity_max_participants,
+            a.participants as current_participants,
+            a.signup_deadline,
+            a.user_id as activity_creator_id
+        FROM activity_signups s
+        INNER JOIN users u ON s.user_id = u.id
+        INNER JOIN activities a ON s.activity_id = a.id
+        WHERE s.activity_id = #{activityId}
+        ORDER BY s.signup_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 获取待审核的报名列表 -->
+    <select id="selectPendingSignups" resultMap="ActivitySignupWithUserInfoMap">
+        SELECT 
+            s.id, s.activity_id, s.user_id, s.status, s.signup_time, s.cancel_time, s.note, s.created_at, s.updated_at,
+            u.username, u.nickname, u.avatar,
+            a.title as activity_title,
+            CONCAT(a.date, ' ', a.time) as activity_time,
+            a.location as activity_location,
+            a.status as activity_status,
+            a.max_participants as activity_max_participants,
+            a.participants as current_participants,
+            a.signup_deadline,
+            a.user_id as activity_creator_id
+        FROM activity_signups s
+        INNER JOIN users u ON s.user_id = u.id
+        INNER JOIN activities a ON s.activity_id = a.id
+        WHERE s.activity_id = #{activityId} AND s.status = 'pending'
+        ORDER BY s.signup_time ASC
+    </select>
+
+    <!-- 获取活动创建者的待处理报名 -->
+    <select id="selectCreatorPendingSignups" resultMap="ActivitySignupWithUserInfoMap">
+        SELECT 
+            s.id, s.activity_id, s.user_id, s.status, s.signup_time, s.cancel_time, s.note, s.created_at, s.updated_at,
+            u.username, u.nickname, u.avatar,
+            a.title as activity_title,
+            CONCAT(a.date, ' ', a.time) as activity_time,
+            a.location as activity_location,
+            a.status as activity_status,
+            a.max_participants as activity_max_participants,
+            a.participants as current_participants,
+            a.signup_deadline,
+            a.user_id as activity_creator_id
+        FROM activity_signups s
+        INNER JOIN users u ON s.user_id = u.id
+        INNER JOIN activities a ON s.activity_id = a.id
+        WHERE a.user_id = #{creatorId} AND s.status = 'pending'
+        ORDER BY s.signup_time ASC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 获取报名趋势统计 -->
+    <select id="selectSignupTrend" resultType="com.xystapp.service.ActivitySignupService$SignupTrendStats">
+        SELECT 
+            DATE(signup_time) as date,
+            COUNT(1) as signupCount,
+            SUM(CASE WHEN status = 'confirmed' THEN 1 ELSE 0 END) as confirmedCount
+        FROM activity_signups 
+        WHERE activity_id = #{activityId}
+        AND signup_time >= DATE_SUB(NOW(), INTERVAL #{days} DAY)
+        GROUP BY DATE(signup_time)
+        ORDER BY date DESC
+    </select>
+
+    <!-- 获取活动报名用户列表 -->
+    <select id="selectActivitySignupUsers" resultMap="ActivitySignupWithUserInfoMap">
+        SELECT 
+            s.id, s.activity_id, s.user_id, s.status, s.signup_time, s.cancel_time, s.note, s.created_at, s.updated_at,
+            u.username, u.nickname, u.avatar,
+            a.title as activity_title,
+            CONCAT(a.date, ' ', a.time) as activity_time,
+            a.location as activity_location,
+            a.status as activity_status,
+            a.max_participants as activity_max_participants,
+            a.participants as current_participants,
+            a.signup_deadline,
+            a.user_id as activity_creator_id
+        FROM activity_signups s
+        INNER JOIN users u ON s.user_id = u.id
+        INNER JOIN activities a ON s.activity_id = a.id
+        WHERE s.activity_id = #{activityId}
+        <if test="status != null and status != ''">
+            AND s.status = #{status}
+        </if>
+        ORDER BY s.signup_time ASC
+        <if test="limit != null and limit > 0">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 获取用户报名的活动列表 -->
+    <select id="selectUserSignupActivities" resultMap="ActivitySignupWithUserInfoMap">
+        SELECT 
+            s.id, s.activity_id, s.user_id, s.status, s.signup_time, s.cancel_time, s.note, s.created_at, s.updated_at,
+            u.username, u.nickname, u.avatar,
+            a.title as activity_title,
+            CONCAT(a.date, ' ', a.time) as activity_time,
+            a.location as activity_location,
+            a.status as activity_status,
+            a.max_participants as activity_max_participants,
+            a.participants as current_participants,
+            a.signup_deadline,
+            a.user_id as activity_creator_id
+        FROM activity_signups s
+        INNER JOIN users u ON s.user_id = u.id
+        INNER JOIN activities a ON s.activity_id = a.id
+        WHERE s.user_id = #{userId}
+        <if test="status != null and status != ''">
+            AND s.status = #{status}
+        </if>
+        ORDER BY s.signup_time DESC
+        <if test="limit != null and limit > 0">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- ==================== 数据导出 ==================== -->
+
+    <!-- 导出活动报名列表 -->
+    <select id="selectExportActivitySignups" resultMap="ActivitySignupWithUserInfoMap">
+        SELECT 
+            s.id, s.activity_id, s.user_id, s.status, s.signup_time, s.cancel_time, s.note, s.created_at, s.updated_at,
+            u.username, u.nickname, u.avatar,
+            a.title as activity_title,
+            CONCAT(a.date, ' ', a.time) as activity_time,
+            a.location as activity_location,
+            a.status as activity_status,
+            a.max_participants as activity_max_participants,
+            a.participants as current_participants,
+            a.signup_deadline,
+            a.user_id as activity_creator_id
+        FROM activity_signups s
+        INNER JOIN users u ON s.user_id = u.id
+        INNER JOIN activities a ON s.activity_id = a.id
+        WHERE s.activity_id = #{activityId}
+        <if test="status != null and status != ''">
+            AND s.status = #{status}
+        </if>
+        ORDER BY s.signup_time ASC
+    </select>
+
+    <!-- 导出用户报名历史 -->
+    <select id="selectExportUserSignups" resultMap="ActivitySignupWithUserInfoMap">
+        SELECT 
+            s.id, s.activity_id, s.user_id, s.status, s.signup_time, s.cancel_time, s.note, s.created_at, s.updated_at,
+            u.username, u.nickname, u.avatar,
+            a.title as activity_title,
+            CONCAT(a.date, ' ', a.time) as activity_time,
+            a.location as activity_location,
+            a.status as activity_status,
+            a.max_participants as activity_max_participants,
+            a.participants as current_participants,
+            a.signup_deadline,
+            a.user_id as activity_creator_id
+        FROM activity_signups s
+        INNER JOIN users u ON s.user_id = u.id
+        INNER JOIN activities a ON s.activity_id = a.id
+        WHERE s.user_id = #{userId}
+        <if test="status != null and status != ''">
+            AND s.status = #{status}
+        </if>
+        ORDER BY s.signup_time DESC
+    </select>
+
+    <!-- ==================== 数据维护 ==================== -->
+
+    <!-- 清理无效的报名记录（活动或用户不存在） -->
+    <delete id="cleanupInvalidSignups">
+        DELETE s FROM activity_signups s
+        LEFT JOIN activities a ON s.activity_id = a.id
+        LEFT JOIN users u ON s.user_id = u.id
+        WHERE a.id IS NULL OR u.id IS NULL
+    </delete>
+
+    <!-- 获取需要清理的报名数量 -->
+    <select id="countSignupsToCleanup" resultType="long">
+        SELECT COUNT(1) 
+        FROM activity_signups s
+        LEFT JOIN activities a ON s.activity_id = a.id
+        LEFT JOIN users u ON s.user_id = u.id
+        WHERE a.id IS NULL OR u.id IS NULL
+        <if test="days != null">
+            OR s.created_at &lt; DATE_SUB(NOW(), INTERVAL #{days} DAY)
+        </if>
+    </select>
+
+    <!-- 更新报名状态 -->
+    <update id="updateSignupStatus">
+        UPDATE activity_signups 
+        SET status = #{status}
+        WHERE activity_id = #{activityId} AND user_id = #{userId}
+    </update>
+
+    <!-- 批量更新报名状态 -->
+    <update id="batchUpdateSignupStatus">
+        UPDATE activity_signups 
+        SET status = #{status}
+        WHERE activity_id = #{activityId} AND user_id IN
+        <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+            #{userId}
+        </foreach>
+    </update>
+
+    <!-- 根据活动ID删除所有报名记录 -->
+    <delete id="deleteByActivityId">
+        DELETE FROM activity_signups WHERE activity_id = #{activityId}
+    </delete>
+
+    <!-- 根据用户ID删除所有报名记录 -->
+    <delete id="deleteByUserId">
+        DELETE FROM activity_signups WHERE user_id = #{userId}
+    </delete>
+
+    <!-- ==================== 权限相关 ==================== -->
+
+    <!-- 检查用户是否是活动创建者 -->
+    <select id="isActivityCreator" resultType="boolean">
+        SELECT COUNT(1) > 0 
+        FROM activities 
+        WHERE id = #{activityId} AND user_id = #{userId}
+    </select>
+
+    <!-- 获取活动的报名用户ID列表 -->
+    <select id="selectActivitySignupUserIds" resultType="long">
+        SELECT user_id 
+        FROM activity_signups 
+        WHERE activity_id = #{activityId}
+        <if test="status != null and status != ''">
+            AND status = #{status}
+        </if>
+        ORDER BY signup_time ASC
+    </select>
+
+    <!-- 获取用户报名的活动ID列表 -->
+    <select id="selectUserSignupActivityIds" resultType="long">
+        SELECT activity_id 
+        FROM activity_signups 
+        WHERE user_id = #{userId}
+        <if test="status != null and status != ''">
+            AND status = #{status}
+        </if>
+        ORDER BY signup_time DESC
+    </select>
+
+    <!-- ==================== 时间相关查询 ==================== -->
+
+    <!-- 获取指定时间段内的报名记录 -->
+    <select id="selectSignupsByTimeRange" resultMap="ActivitySignupWithUserInfoMap">
+        SELECT 
+            s.id, s.activity_id, s.user_id, s.status, s.signup_time, s.cancel_time, s.note, s.created_at, s.updated_at,
+            u.username, u.nickname, u.avatar,
+            a.title as activity_title,
+            CONCAT(a.date, ' ', a.time) as activity_time,
+            a.location as activity_location,
+            a.status as activity_status,
+            a.max_participants as activity_max_participants,
+            a.participants as current_participants,
+            a.signup_deadline,
+            a.user_id as activity_creator_id
+        FROM activity_signups s
+        INNER JOIN users u ON s.user_id = u.id
+        INNER JOIN activities a ON s.activity_id = a.id
+        WHERE s.activity_id = #{activityId}
+        AND s.signup_time BETWEEN #{startTime} AND #{endTime}
+        ORDER BY s.signup_time DESC
+    </select>
+
+    <!-- 获取用户指定时间段内的报名记录 -->
+    <select id="selectUserSignupsByTimeRange" resultMap="ActivitySignupWithUserInfoMap">
+        SELECT 
+            s.id, s.activity_id, s.user_id, s.status, s.signup_time, s.cancel_time, s.note, s.created_at, s.updated_at,
+            u.username, u.nickname, u.avatar,
+            a.title as activity_title,
+            CONCAT(a.date, ' ', a.time) as activity_time,
+            a.location as activity_location,
+            a.status as activity_status,
+            a.max_participants as activity_max_participants,
+            a.participants as current_participants,
+            a.signup_deadline,
+            a.user_id as activity_creator_id
+        FROM activity_signups s
+        INNER JOIN users u ON s.user_id = u.id
+        INNER JOIN activities a ON s.activity_id = a.id
+        WHERE s.user_id = #{userId}
+        AND s.signup_time BETWEEN #{startTime} AND #{endTime}
+        ORDER BY s.signup_time DESC
+    </select>
+
+    <!-- 获取即将到期的报名（活动即将开始） -->
+    <select id="selectUpcomingSignups" resultMap="ActivitySignupWithUserInfoMap">
+        SELECT 
+            s.id, s.activity_id, s.user_id, s.status, s.signup_time, s.cancel_time, s.note, s.created_at, s.updated_at,
+            u.username, u.nickname, u.avatar,
+            a.title as activity_title,
+            CONCAT(a.date, ' ', a.time) as activity_time,
+            a.location as activity_location,
+            a.status as activity_status,
+            a.max_participants as activity_max_participants,
+            a.participants as current_participants,
+            a.signup_deadline,
+            a.user_id as activity_creator_id
+        FROM activity_signups s
+        INNER JOIN users u ON s.user_id = u.id
+        INNER JOIN activities a ON s.activity_id = a.id
+        WHERE a.date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL #{days} DAY)
+        AND s.status = 'confirmed'
+        ORDER BY a.date ASC
+    </select>
+
+    <!-- 获取过期的报名（活动已结束） -->
+    <select id="selectExpiredSignups" resultMap="ActivitySignupWithUserInfoMap">
+        SELECT 
+            s.id, s.activity_id, s.user_id, s.status, s.signup_time, s.cancel_time, s.note, s.created_at, s.updated_at,
+            u.username, u.nickname, u.avatar,
+            a.title as activity_title,
+            CONCAT(a.date, ' ', a.time) as activity_time,
+            a.location as activity_location,
+            a.status as activity_status,
+            a.max_participants as activity_max_participants,
+            a.participants as current_participants,
+            a.signup_deadline,
+            a.user_id as activity_creator_id
+        FROM activity_signups s
+        INNER JOIN users u ON s.user_id = u.id
+        INNER JOIN activities a ON s.activity_id = a.id
+        WHERE a.date &lt; DATE_SUB(CURDATE(), INTERVAL #{days} DAY)
+        ORDER BY a.date DESC
+    </select>
+
+</mapper>

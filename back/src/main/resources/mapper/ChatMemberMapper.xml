@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xystapp.mapper.ChatMemberMapper">
+
+    <!-- 聊天成员结果映射（包含用户信息） -->
+    <resultMap id="ChatMemberWithUserInfoMap" type="com.xystapp.entity.ChatMember">
+        <result column="chat_id" property="chatId"/>
+        <result column="user_id" property="userId"/>
+        <result column="role" property="role"/>
+        <result column="joined_at" property="joinedAt"/>
+        <result column="last_read_at" property="lastReadAt"/>
+        <result column="unread_count" property="unreadCount"/>
+        
+        <!-- 用户信息 -->
+        <result column="username" property="username"/>
+        <result column="nickname" property="nickname"/>
+        <result column="avatar" property="avatar"/>
+        
+        <!-- 聊天信息 -->
+        <result column="chat_name" property="chatName"/>
+        <result column="chat_type" property="chatType"/>
+    </resultMap>
+
+    <!-- 获取聊天成员列表（包含用户信息） -->
+    <select id="selectMembersByChatId" resultMap="ChatMemberWithUserInfoMap">
+        SELECT 
+            cm.chat_id, cm.user_id, cm.role, cm.joined_at, cm.last_read_at, cm.unread_count,
+            u.username, u.nickname, u.avatar,
+            c.name as chat_name,
+            c.type as chat_type
+        FROM chat_members cm
+        INNER JOIN users u ON cm.user_id = u.id
+        INNER JOIN chats c ON cm.chat_id = c.id
+        WHERE cm.chat_id = #{chatId}
+        ORDER BY cm.joined_at ASC
+    </select>
+
+    <!-- 获取私聊中的对方用户 -->
+    <select id="selectOtherUserInPrivateChat" resultMap="ChatMemberWithUserInfoMap">
+        SELECT 
+            cm.chat_id, cm.user_id, cm.role, cm.joined_at, cm.last_read_at, cm.unread_count,
+            u.username, u.nickname, u.avatar,
+            c.name as chat_name,
+            c.type as chat_type
+        FROM chat_members cm
+        INNER JOIN users u ON cm.user_id = u.id
+        INNER JOIN chats c ON cm.chat_id = c.id
+        WHERE cm.chat_id = #{chatId} 
+        AND cm.user_id != #{userId}
+        AND c.type = 'private'
+        LIMIT 1
+    </select>
+
+    <!-- 获取聊天成员信息 -->
+    <select id="selectMember" resultMap="ChatMemberWithUserInfoMap">
+        SELECT 
+            cm.chat_id, cm.user_id, cm.role, cm.joined_at, cm.last_read_at, cm.unread_count,
+            u.username, u.nickname, u.avatar,
+            c.name as chat_name,
+            c.type as chat_type
+        FROM chat_members cm
+        INNER JOIN users u ON cm.user_id = u.id
+        INNER JOIN chats c ON cm.chat_id = c.id
+        WHERE cm.chat_id = #{chatId} AND cm.user_id = #{userId}
+    </select>
+
+    <!-- 获取除发送者外的聊天成员 -->
+    <select id="selectMembersExceptSender" resultMap="ChatMemberWithUserInfoMap">
+        SELECT 
+            cm.chat_id, cm.user_id, cm.role, cm.joined_at, cm.last_read_at, cm.unread_count,
+            u.username, u.nickname, u.avatar,
+            c.name as chat_name,
+            c.type as chat_type
+        FROM chat_members cm
+        INNER JOIN users u ON cm.user_id = u.id
+        INNER JOIN chats c ON cm.chat_id = c.id
+        WHERE cm.chat_id = #{chatId} AND cm.user_id != #{senderId}
+        ORDER BY cm.joined_at ASC
+    </select>
+
+    <!-- 获取私聊ID -->
+    <select id="selectPrivateChatId" resultType="long">
+        SELECT c.id
+        FROM chats c
+        INNER JOIN chat_members cm1 ON c.id = cm1.chat_id
+        INNER JOIN chat_members cm2 ON c.id = cm2.chat_id
+        WHERE c.type = 'private'
+        AND cm1.user_id = #{userId1}
+        AND cm2.user_id = #{userId2}
+        AND cm1.user_id != cm2.user_id
+        LIMIT 1
+    </select>
+
+    <!-- 获取用户未读消息数 -->
+    <select id="selectUnreadCount" resultType="integer">
+        SELECT COALESCE(unread_count, 0)
+        FROM chat_members
+        WHERE chat_id = #{chatId} AND user_id = #{userId}
+    </select>
+
+    <!-- 获取用户总未读消息数 -->
+    <select id="selectTotalUnreadCount" resultType="integer">
+        SELECT COALESCE(SUM(unread_count), 0)
+        FROM chat_members
+        WHERE user_id = #{userId}
+    </select>
+
+    <!-- 标记聊天为已读 -->
+    <update id="markChatAsRead">
+        UPDATE chat_members 
+        SET last_read_at = #{readAt}, unread_count = 0
+        WHERE chat_id = #{chatId} AND user_id = #{userId}
+    </update>
+
+    <!-- 更新未读计数 -->
+    <update id="updateUnreadCount">
+        UPDATE chat_members 
+        SET unread_count = GREATEST(unread_count + #{delta}, 0)
+        WHERE chat_id = #{chatId} AND user_id = #{userId}
+    </update>
+
+    <!-- 重置聊天所有成员的未读计数 -->
+    <update id="resetUnreadCount">
+        UPDATE chat_members 
+        SET unread_count = 0
+        WHERE chat_id = #{chatId}
+    </update>
+
+    <!-- 删除聊天成员 -->
+    <delete id="deleteMembersByChatId">
+        DELETE FROM chat_members WHERE chat_id = #{chatId}
+    </delete>
+
+    <!-- 检查用户是否是聊天成员 -->
+    <select id="isChatMember" resultType="boolean">
+        SELECT COUNT(1) > 0
+        FROM chat_members
+        WHERE chat_id = #{chatId} AND user_id = #{userId}
+    </select>
+
+    <!-- 获取用户在聊天中的角色 -->
+    <select id="selectUserRole" resultType="string">
+        SELECT role
+        FROM chat_members
+        WHERE chat_id = #{chatId} AND user_id = #{userId}
+    </select>
+
+    <!-- 更新用户角色 -->
+    <update id="updateUserRole">
+        UPDATE chat_members 
+        SET role = #{role}
+        WHERE chat_id = #{chatId} AND user_id = #{userId}
+    </update>
+
+    <!-- 获取用户参与的聊天列表 -->
+    <select id="selectUserChatIds" resultType="long">
+        SELECT chat_id
+        FROM chat_members
+        WHERE user_id = #{userId}
+        ORDER BY joined_at DESC
+    </select>
+
+    <!-- 批量获取聊天成员 -->
+    <select id="selectMembersByChatIds" resultMap="ChatMemberWithUserInfoMap">
+        SELECT 
+            cm.chat_id, cm.user_id, cm.role, cm.joined_at, cm.last_read_at, cm.unread_count,
+            u.username, u.nickname, u.avatar,
+            c.name as chat_name,
+            c.type as chat_type
+        FROM chat_members cm
+        INNER JOIN users u ON cm.user_id = u.id
+        INNER JOIN chats c ON cm.chat_id = c.id
+        WHERE cm.chat_id IN
+        <foreach collection="chatIds" item="chatId" open="(" separator="," close=")">
+            #{chatId}
+        </foreach>
+        ORDER BY cm.chat_id, cm.joined_at ASC
+    </select>
+
+</mapper>

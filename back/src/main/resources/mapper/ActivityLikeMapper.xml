@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xystapp.mapper.ActivityLikeMapper">
+
+    <!-- 活动点赞结果映射（包含用户信息） -->
+    <resultMap id="ActivityLikeWithUserInfoMap" type="com.xystapp.entity.ActivityLike">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="activity_id" property="activityId"/>
+        <result column="created_at" property="createdAt"/>
+        
+        <!-- 用户信息 -->
+        <result column="username" property="username"/>
+        <result column="nickname" property="nickname"/>
+        <result column="avatar" property="avatar"/>
+        
+        <!-- 活动信息 -->
+        <result column="activity_title" property="activityTitle"/>
+        <result column="activity_description" property="activityDescription"/>
+    </resultMap>
+
+    <!-- 获取活动点赞列表（包含用户信息） -->
+    <select id="selectActivityLikesWithUserInfo" resultMap="ActivityLikeWithUserInfoMap">
+        SELECT 
+            al.id, al.user_id, al.activity_id, al.created_at,
+            u.username, u.nickname, u.avatar,
+            a.title as activity_title,
+            LEFT(a.description, 100) as activity_description
+        FROM activity_likes al
+        INNER JOIN users u ON al.user_id = u.id
+        INNER JOIN activities a ON al.activity_id = a.id
+        WHERE al.activity_id = #{activityId}
+        ORDER BY al.created_at DESC
+    </select>
+
+    <!-- 获取用户点赞的活动列表（包含活动信息） -->
+    <select id="selectUserLikedActivitiesWithInfo" resultMap="ActivityLikeWithUserInfoMap">
+        SELECT 
+            al.id, al.user_id, al.activity_id, al.created_at,
+            u.username, u.nickname, u.avatar,
+            a.title as activity_title,
+            LEFT(a.description, 100) as activity_description
+        FROM activity_likes al
+        INNER JOIN users u ON al.user_id = u.id
+        INNER JOIN activities a ON al.activity_id = a.id
+        WHERE al.user_id = #{userId}
+        ORDER BY al.created_at DESC
+    </select>
+
+    <!-- 统计用户点赞的活动数量 -->
+    <select id="countUserActivityLikes" resultType="long">
+        SELECT COUNT(1)
+        FROM activity_likes
+        WHERE user_id = #{userId}
+    </select>
+
+    <!-- 获取用户点赞的活动ID列表 -->
+    <select id="selectLikedActivityIds" resultType="long">
+        SELECT activity_id
+        FROM activity_likes
+        WHERE user_id = #{userId}
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 批量检查活动点赞状态 -->
+    <select id="selectLikedActivityIdsByUser" resultType="long">
+        SELECT activity_id
+        FROM activity_likes
+        WHERE user_id = #{userId}
+        AND activity_id IN
+        <foreach collection="activityIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+</mapper>

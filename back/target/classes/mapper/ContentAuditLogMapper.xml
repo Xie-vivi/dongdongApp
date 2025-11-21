@@ -1,0 +1,1038 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xystapp.mapper.ContentAuditLogMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="ContentAuditLogDetailMap" type="com.xystapp.entity.ContentAuditLog">
+        <id column="id" property="id"/>
+        <result column="admin_id" property="adminId"/>
+        <result column="admin_username" property="adminUsername"/>
+        <result column="content_type" property="contentType"/>
+        <result column="content_id" property="contentId"/>
+        <result column="action" property="action"/>
+        <result column="reason" property="reason"/>
+        <result column="original_status" property="originalStatus"/>
+        <result column="new_status" property="newStatus"/>
+        <result column="created_at" property="createdAt"/>
+        <!-- 临时字段 -->
+        <result column="admin_nickname" property="adminNickname"/>
+        <result column="admin_avatar" property="adminAvatar"/>
+        <result column="content_title" property="contentTitle"/>
+        <result column="content_description" property="contentDescription"/>
+        <result column="content_author_id" property="contentAuthorId"/>
+        <result column="content_author_username" property="contentAuthorUsername"/>
+        <result column="content_author_nickname" property="contentAuthorNickname"/>
+        <result column="can_revoke" property="canRevoke"/>
+    </resultMap>
+
+    <!-- 分页查询内容审核日志 -->
+    <select id="selectContentAuditLogs" resultMap="ContentAuditLogDetailMap">
+        SELECT 
+            l.*,
+            u.nickname AS admin_nickname,
+            u.avatar AS admin_avatar,
+            CASE 
+                WHEN l.content_type = 'post' THEN p.title
+                WHEN l.content_type = 'activity' THEN a.title
+                WHEN l.content_type = 'user' THEN u_target.nickname
+                WHEN l.content_type = 'field' THEN f.name
+                ELSE NULL
+            END AS content_title,
+            CASE 
+                WHEN l.content_type = 'post' THEN p.subtitle
+                WHEN l.content_type = 'activity' THEN a.description
+                WHEN l.content_type = 'user' THEN u_target.bio
+                WHEN l.content_type = 'field' THEN f.description
+                ELSE NULL
+            END AS content_description,
+            CASE 
+                WHEN l.content_type = 'post' THEN p.user_id
+                WHEN l.content_type = 'activity' THEN a.user_id
+                WHEN l.content_type = 'user' THEN u_target.id
+                WHEN l.content_type = 'field' THEN f.creator_id
+                ELSE NULL
+            END AS content_author_id,
+            CASE 
+                WHEN l.content_type = 'post' THEN u_post.username
+                WHEN l.content_type = 'activity' THEN u_activity.username
+                WHEN l.content_type = 'user' THEN u_target.username
+                WHEN l.content_type = 'field' THEN u_field.username
+                ELSE NULL
+            END AS content_author_username,
+            CASE 
+                WHEN l.content_type = 'post' THEN u_post.nickname
+                WHEN l.content_type = 'activity' THEN u_activity.nickname
+                WHEN l.content_type = 'user' THEN u_target.nickname
+                WHEN l.content_type = 'field' THEN u_field.nickname
+                ELSE NULL
+            END AS content_author_nickname,
+            CASE 
+                WHEN l.created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR) THEN TRUE
+                ELSE FALSE
+            END AS can_revoke
+        FROM content_audit_logs l
+        LEFT JOIN users u ON l.admin_id = u.id
+        LEFT JOIN posts p ON l.content_type = 'post' AND l.content_id = p.id
+        LEFT JOIN activities a ON l.content_type = 'activity' AND l.content_id = a.id
+        LEFT JOIN users u_target ON l.content_type = 'user' AND l.content_id = u_target.id
+        LEFT JOIN fields f ON l.content_type = 'field' AND l.content_id = f.id
+        LEFT JOIN users u_post ON l.content_type = 'post' AND p.user_id = u_post.id
+        LEFT JOIN users u_activity ON l.content_type = 'activity' AND a.user_id = u_activity.id
+        LEFT JOIN users u_field ON l.content_type = 'field' AND f.creator_id = u_field.id
+        WHERE 1=1
+        <if test="contentType != null and contentType != ''">
+            AND l.content_type = #{contentType}
+        </if>
+        <if test="action != null and action != ''">
+            AND l.action = #{action}
+        </if>
+        <if test="adminId != null and adminId != ''">
+            AND l.admin_id = #{adminId}
+        </if>
+        <if test="timeRange != null and timeRange != ''">
+            <choose>
+                <when test="timeRange == 'today'">
+                    AND DATE(l.created_at) = CURDATE()
+                </when>
+                <when test="timeRange == 'yesterday'">
+                    AND DATE(l.created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+                </when>
+                <when test="timeRange == 'week'">
+                    AND l.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                </when>
+                <when test="timeRange == 'month'">
+                    AND l.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                </when>
+                <when test="timeRange == 'year'">
+                    AND l.created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+                </when>
+            </choose>
+        </if>
+        ORDER BY l.created_at DESC
+    </select>
+
+    <!-- 获取内容审核日志详情 -->
+    <select id="selectContentAuditLogDetail" resultMap="ContentAuditLogDetailMap">
+        SELECT 
+            l.*,
+            u.nickname AS admin_nickname,
+            u.avatar AS admin_avatar,
+            CASE 
+                WHEN l.content_type = 'post' THEN p.title
+                WHEN l.content_type = 'activity' THEN a.title
+                WHEN l.content_type = 'user' THEN u_target.nickname
+                WHEN l.content_type = 'field' THEN f.name
+                ELSE NULL
+            END AS content_title,
+            CASE 
+                WHEN l.content_type = 'post' THEN p.subtitle
+                WHEN l.content_type = 'activity' THEN a.description
+                WHEN l.content_type = 'user' THEN u_target.bio
+                WHEN l.content_type = 'field' THEN f.description
+                ELSE NULL
+            END AS content_description,
+            CASE 
+                WHEN l.content_type = 'post' THEN p.user_id
+                WHEN l.content_type = 'activity' THEN a.user_id
+                WHEN l.content_type = 'user' THEN u_target.id
+                WHEN l.content_type = 'field' THEN f.creator_id
+                ELSE NULL
+            END AS content_author_id,
+            CASE 
+                WHEN l.content_type = 'post' THEN u_post.username
+                WHEN l.content_type = 'activity' THEN u_activity.username
+                WHEN l.content_type = 'user' THEN u_target.username
+                WHEN l.content_type = 'field' THEN u_field.username
+                ELSE NULL
+            END AS content_author_username,
+            CASE 
+                WHEN l.content_type = 'post' THEN u_post.nickname
+                WHEN l.content_type = 'activity' THEN u_activity.nickname
+                WHEN l.content_type = 'user' THEN u_target.nickname
+                WHEN l.content_type = 'field' THEN u_field.nickname
+                ELSE NULL
+            END AS content_author_nickname,
+            CASE 
+                WHEN l.created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR) THEN TRUE
+                ELSE FALSE
+            END AS can_revoke
+        FROM content_audit_logs l
+        LEFT JOIN users u ON l.admin_id = u.id
+        LEFT JOIN posts p ON l.content_type = 'post' AND l.content_id = p.id
+        LEFT JOIN activities a ON l.content_type = 'activity' AND l.content_id = a.id
+        LEFT JOIN users u_target ON l.content_type = 'user' AND l.content_id = u_target.id
+        LEFT JOIN fields f ON l.content_type = 'field' AND l.content_id = f.id
+        LEFT JOIN users u_post ON l.content_type = 'post' AND p.user_id = u_post.id
+        LEFT JOIN users u_activity ON l.content_type = 'activity' AND a.user_id = u_activity.id
+        LEFT JOIN users u_field ON l.content_type = 'field' AND f.creator_id = u_field.id
+        WHERE l.id = #{logId}
+    </select>
+
+    <!-- 按内容类型统计审核数量 -->
+    <select id="selectAuditStatsByContentType" resultType="com.xystapp.entity.ContentAuditLog">
+        SELECT 
+            content_type AS contentType,
+            COUNT(*) AS auditCount,
+            SUM(CASE WHEN action = 'approve' THEN 1 ELSE 0 END) AS approveCount,
+            SUM(CASE WHEN action = 'reject' THEN 1 ELSE 0 END) AS rejectCount,
+            SUM(CASE WHEN action = 'delete' THEN 1 ELSE 0 END) AS deleteCount,
+            SUM(CASE WHEN action = 'hide' THEN 1 ELSE 0 END) AS hideCount,
+            SUM(CASE WHEN action = 'restore' THEN 1 ELSE 0 END) AS restoreCount
+        FROM content_audit_logs
+        WHERE 1=1
+        <if test="timeRange != null and timeRange != ''">
+            <choose>
+                <when test="timeRange == 'today'">
+                    AND DATE(created_at) = CURDATE()
+                </when>
+                <when test="timeRange == 'yesterday'">
+                    AND DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+                </when>
+                <when test="timeRange == 'week'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                </when>
+                <when test="timeRange == 'month'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                </when>
+                <when test="timeRange == 'year'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+                </when>
+            </choose>
+        </if>
+        GROUP BY content_type
+        ORDER BY auditCount DESC
+    </select>
+
+    <!-- 按审核动作统计数量 -->
+    <select id="selectAuditStatsByAction" resultType="com.xystapp.entity.ContentAuditLog">
+        SELECT 
+            action,
+            COUNT(*) AS auditCount,
+            content_type AS contentType
+        FROM content_audit_logs
+        WHERE 1=1
+        <if test="timeRange != null and timeRange != ''">
+            <choose>
+                <when test="timeRange == 'today'">
+                    AND DATE(created_at) = CURDATE()
+                </when>
+                <when test="timeRange == 'yesterday'">
+                    AND DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+                </when>
+                <when test="timeRange == 'week'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                </when>
+                <when test="timeRange == 'month'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                </when>
+                <when test="timeRange == 'year'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+                </when>
+            </choose>
+        </if>
+        GROUP BY action, content_type
+        ORDER BY auditCount DESC
+    </select>
+
+    <!-- 按管理员统计审核数量 -->
+    <select id="selectAuditStatsByAdmin" resultType="com.xystapp.entity.ContentAuditLog">
+        SELECT 
+            l.admin_id AS adminId,
+            l.admin_username AS adminUsername,
+            u.nickname AS adminNickname,
+            u.avatar AS adminAvatar,
+            COUNT(*) AS auditCount,
+            SUM(CASE WHEN l.action = 'approve' THEN 1 ELSE 0 END) AS approveCount,
+            SUM(CASE WHEN l.action = 'reject' THEN 1 ELSE 0 END) AS rejectCount,
+            SUM(CASE WHEN l.action = 'delete' THEN 1 ELSE 0 END) AS deleteCount,
+            MAX(l.created_at) AS lastAuditTime
+        FROM content_audit_logs l
+        LEFT JOIN users u ON l.admin_id = u.id
+        WHERE 1=1
+        <if test="timeRange != null and timeRange != ''">
+            <choose>
+                <when test="timeRange == 'today'">
+                    AND DATE(l.created_at) = CURDATE()
+                </when>
+                <when test="timeRange == 'yesterday'">
+                    AND DATE(l.created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+                </when>
+                <when test="timeRange == 'week'">
+                    AND l.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                </when>
+                <when test="timeRange == 'month'">
+                    AND l.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                </when>
+                <when test="timeRange == 'year'">
+                    AND l.created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+                </when>
+            </choose>
+        </if>
+        GROUP BY l.admin_id, l.admin_username, u.nickname, u.avatar
+        ORDER BY auditCount DESC
+    </select>
+
+    <!-- 获取审核趋势统计 -->
+    <select id="selectAuditTrend" resultType="com.xystapp.entity.ContentAuditLog">
+        SELECT 
+            DATE(created_at) AS date,
+            COUNT(*) AS totalAudits,
+            SUM(CASE WHEN action = 'approve' THEN 1 ELSE 0 END) AS approveCount,
+            SUM(CASE WHEN action = 'reject' THEN 1 ELSE 0 END) AS rejectCount,
+            SUM(CASE WHEN action = 'delete' THEN 1 ELSE 0 END) AS deleteCount,
+            SUM(CASE WHEN action = 'hide' THEN 1 ELSE 0 END) AS hideCount,
+            SUM(CASE WHEN action = 'restore' THEN 1 ELSE 0 END) AS restoreCount
+        FROM content_audit_logs
+        WHERE 1=1
+        <if test="timeRange != null and timeRange != ''">
+            <choose>
+                <when test="timeRange == 'today'">
+                    AND DATE(created_at) = CURDATE()
+                </when>
+                <when test="timeRange == 'yesterday'">
+                    AND DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+                </when>
+                <when test="timeRange == 'week'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                </when>
+                <when test="timeRange == 'month'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                </when>
+                <when test="timeRange == 'year'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+                </when>
+            </choose>
+        </if>
+        GROUP BY DATE(created_at)
+        ORDER BY date DESC
+    </select>
+
+    <!-- 按内容ID查询审核历史 -->
+    <select id="selectAuditHistoryByContent" resultType="com.xystapp.entity.ContentAuditLog">
+        SELECT 
+            l.*,
+            u.nickname AS admin_nickname,
+            u.avatar AS admin_avatar
+        FROM content_audit_logs l
+        LEFT JOIN users u ON l.admin_id = u.id
+        WHERE l.content_type = #{contentType} AND l.content_id = #{contentId}
+        ORDER BY l.created_at DESC
+    </select>
+
+    <!-- 按管理员查询审核记录 -->
+    <select id="selectAuditsByAdmin" resultType="com.xystapp.entity.ContentAuditLog">
+        SELECT 
+            l.*,
+            u.nickname AS admin_nickname,
+            u.avatar AS admin_avatar,
+            CASE 
+                WHEN l.content_type = 'post' THEN p.title
+                WHEN l.content_type = 'activity' THEN a.title
+                WHEN l.content_type = 'user' THEN u_target.nickname
+                WHEN l.content_type = 'field' THEN f.name
+                ELSE NULL
+            END AS content_title
+        FROM content_audit_logs l
+        LEFT JOIN users u ON l.admin_id = u.id
+        LEFT JOIN posts p ON l.content_type = 'post' AND l.content_id = p.id
+        LEFT JOIN activities a ON l.content_type = 'activity' AND l.content_id = a.id
+        LEFT JOIN users u_target ON l.content_type = 'user' AND l.content_id = u_target.id
+        LEFT JOIN fields f ON l.content_type = 'field' AND l.content_id = f.id
+        WHERE l.admin_id = #{adminId}
+        ORDER BY l.created_at DESC
+        <if test="limit != null and limit > 0">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 获取最近审核记录 -->
+    <select id="selectRecentAudits" resultType="com.xystapp.entity.ContentAuditLog">
+        SELECT 
+            l.*,
+            u.nickname AS admin_nickname,
+            u.avatar AS admin_avatar,
+            CASE 
+                WHEN l.content_type = 'post' THEN p.title
+                WHEN l.content_type = 'activity' THEN a.title
+                WHEN l.content_type = 'user' THEN u_target.nickname
+                WHEN l.content_type = 'field' THEN f.name
+                ELSE NULL
+            END AS content_title
+        FROM content_audit_logs l
+        LEFT JOIN users u ON l.admin_id = u.id
+        LEFT JOIN posts p ON l.content_type = 'post' AND l.content_id = p.id
+        LEFT JOIN activities a ON l.content_type = 'activity' AND l.content_id = a.id
+        LEFT JOIN users u_target ON l.content_type = 'user' AND l.content_id = u_target.id
+        LEFT JOIN fields f ON l.content_type = 'field' AND l.content_id = f.id
+        ORDER BY l.created_at DESC
+        <if test="limit != null and limit > 0">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 导出内容审核日志 -->
+    <select id="selectContentAuditLogsForExport" resultType="com.xystapp.entity.ContentAuditLog">
+        SELECT 
+            l.*,
+            u.nickname AS admin_nickname,
+            u.avatar AS admin_avatar,
+            CASE 
+                WHEN l.content_type = 'post' THEN p.title
+                WHEN l.content_type = 'activity' THEN a.title
+                WHEN l.content_type = 'user' THEN u_target.nickname
+                WHEN l.content_type = 'field' THEN f.name
+                ELSE NULL
+            END AS content_title,
+            CASE 
+                WHEN l.content_type = 'post' THEN p.subtitle
+                WHEN l.content_type = 'activity' THEN a.description
+                WHEN l.content_type = 'user' THEN u_target.bio
+                WHEN l.content_type = 'field' THEN f.description
+                ELSE NULL
+            END AS content_description,
+            CASE 
+                WHEN l.content_type = 'post' THEN u_post.username
+                WHEN l.content_type = 'activity' THEN u_activity.username
+                WHEN l.content_type = 'user' THEN u_target.username
+                WHEN l.content_type = 'field' THEN u_field.username
+                ELSE NULL
+            END AS content_author_username,
+            CASE 
+                WHEN l.content_type = 'post' THEN u_post.nickname
+                WHEN l.content_type = 'activity' THEN u_activity.nickname
+                WHEN l.content_type = 'user' THEN u_target.nickname
+                WHEN l.content_type = 'field' THEN u_field.nickname
+                ELSE NULL
+            END AS content_author_nickname
+        FROM content_audit_logs l
+        LEFT JOIN users u ON l.admin_id = u.id
+        LEFT JOIN posts p ON l.content_type = 'post' AND l.content_id = p.id
+        LEFT JOIN activities a ON l.content_type = 'activity' AND l.content_id = a.id
+        LEFT JOIN users u_target ON l.content_type = 'user' AND l.content_id = u_target.id
+        LEFT JOIN fields f ON l.content_type = 'field' AND l.content_id = f.id
+        LEFT JOIN users u_post ON l.content_type = 'post' AND p.user_id = u_post.id
+        LEFT JOIN users u_activity ON l.content_type = 'activity' AND a.user_id = u_activity.id
+        LEFT JOIN users u_field ON l.content_type = 'field' AND f.creator_id = u_field.id
+        WHERE 1=1
+        <if test="contentType != null and contentType != ''">
+            AND l.content_type = #{contentType}
+        </if>
+        <if test="action != null and action != ''">
+            AND l.action = #{action}
+        </if>
+        <if test="timeRange != null and timeRange != ''">
+            <choose>
+                <when test="timeRange == 'today'">
+                    AND DATE(l.created_at) = CURDATE()
+                </when>
+                <when test="timeRange == 'yesterday'">
+                    AND DATE(l.created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+                </when>
+                <when test="timeRange == 'week'">
+                    AND l.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                </when>
+                <when test="timeRange == 'month'">
+                    AND l.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                </when>
+                <when test="timeRange == 'year'">
+                    AND l.created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+                </when>
+            </choose>
+        </if>
+        ORDER BY l.created_at DESC
+    </select>
+
+    <!-- 统计审核总数 -->
+    <select id="countAuditsByTimeRange" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM content_audit_logs
+        WHERE 1=1
+        <if test="timeRange != null and timeRange != ''">
+            <choose>
+                <when test="timeRange == 'today'">
+                    AND DATE(created_at) = CURDATE()
+                </when>
+                <when test="timeRange == 'yesterday'">
+                    AND DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+                </when>
+                <when test="timeRange == 'week'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                </when>
+                <when test="timeRange == 'month'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                </when>
+                <when test="timeRange == 'year'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+                </when>
+            </choose>
+        </if>
+    </select>
+
+    <!-- 统计通过审核数量 -->
+    <select id="countApprovedAuditsByTimeRange" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM content_audit_logs
+        WHERE action = 'approve'
+        <if test="timeRange != null and timeRange != ''">
+            <choose>
+                <when test="timeRange == 'today'">
+                    AND DATE(created_at) = CURDATE()
+                </when>
+                <when test="timeRange == 'yesterday'">
+                    AND DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+                </when>
+                <when test="timeRange == 'week'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                </when>
+                <when test="timeRange == 'month'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                </when>
+                <when test="timeRange == 'year'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+                </when>
+            </choose>
+        </if>
+    </select>
+
+    <!-- 统计拒绝审核数量 -->
+    <select id="countRejectedAuditsByTimeRange" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM content_audit_logs
+        WHERE action = 'reject'
+        <if test="timeRange != null and timeRange != ''">
+            <choose>
+                <when test="timeRange == 'today'">
+                    AND DATE(created_at) = CURDATE()
+                </when>
+                <when test="timeRange == 'yesterday'">
+                    AND DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+                </when>
+                <when test="timeRange == 'week'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                </when>
+                <when test="timeRange == 'month'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                </when>
+                <when test="timeRange == 'year'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+                </when>
+            </choose>
+        </if>
+    </select>
+
+    <!-- 统计删除操作数量 -->
+    <select id="countDeletedAuditsByTimeRange" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM content_audit_logs
+        WHERE action = 'delete'
+        <if test="timeRange != null and timeRange != ''">
+            <choose>
+                <when test="timeRange == 'today'">
+                    AND DATE(created_at) = CURDATE()
+                </when>
+                <when test="timeRange == 'yesterday'">
+                    AND DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+                </when>
+                <when test="timeRange == 'week'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                </when>
+                <when test="timeRange == 'month'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                </when>
+                <when test="timeRange == 'year'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+                </when>
+            </choose>
+        </if>
+    </select>
+
+    <!-- 统计隐藏操作数量 -->
+    <select id="countHiddenAuditsByTimeRange" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM content_audit_logs
+        WHERE action = 'hide'
+        <if test="timeRange != null and timeRange != ''">
+            <choose>
+                <when test="timeRange == 'today'">
+                    AND DATE(created_at) = CURDATE()
+                </when>
+                <when test="timeRange == 'yesterday'">
+                    AND DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+                </when>
+                <when test="timeRange == 'week'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                </when>
+                <when test="timeRange == 'month'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                </when>
+                <when test="timeRange == 'year'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+                </when>
+            </choose>
+        </if>
+    </select>
+
+    <!-- 获取审核效率统计 -->
+    <select id="selectAuditEfficiencyStats" resultType="com.xystapp.entity.ContentAuditLog">
+        SELECT 
+            l.admin_id AS adminId,
+            l.admin_username AS adminUsername,
+            u.nickname AS adminNickname,
+            COUNT(*) AS totalAudits,
+            AVG(TIMESTAMPDIFF(HOUR, c.created_at, l.created_at)) AS avgResponseHours,
+            MIN(TIMESTAMPDIFF(HOUR, c.created_at, l.created_at)) AS minResponseHours,
+            MAX(TIMESTAMPDIFF(HOUR, c.created_at, l.created_at)) AS maxResponseHours
+        FROM content_audit_logs l
+        LEFT JOIN users u ON l.admin_id = u.id
+        LEFT JOIN (
+            SELECT 
+                CASE 
+                    WHEN content_type = 'post' THEN (SELECT created_at FROM posts WHERE id = content_id)
+                    WHEN content_type = 'activity' THEN (SELECT created_at FROM activities WHERE id = content_id)
+                    WHEN content_type = 'user' THEN (SELECT created_at FROM users WHERE id = content_id)
+                    WHEN content_type = 'field' THEN (SELECT created_at FROM fields WHERE id = content_id)
+                    ELSE NULL
+                END AS content_created_at,
+                id,
+                admin_id,
+                content_type,
+                content_id
+            FROM content_audit_logs
+        ) c ON l.id = c.id
+        WHERE 1=1
+        <if test="timeRange != null and timeRange != ''">
+            <choose>
+                <when test="timeRange == 'today'">
+                    AND DATE(l.created_at) = CURDATE()
+                </when>
+                <when test="timeRange == 'yesterday'">
+                    AND DATE(l.created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+                </when>
+                <when test="timeRange == 'week'">
+                    AND l.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                </when>
+                <when test="timeRange == 'month'">
+                    AND l.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                </when>
+                <when test="timeRange == 'year'">
+                    AND l.created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+                </when>
+            </choose>
+        </if>
+        GROUP BY l.admin_id, l.admin_username, u.nickname
+        ORDER BY totalAudits DESC
+    </select>
+
+    <!-- 获取热门审核内容 -->
+    <select id="selectHotAuditContent" resultType="com.xystapp.entity.ContentAuditLog">
+        SELECT 
+            content_type AS contentType,
+            content_id AS contentId,
+            COUNT(*) AS auditCount,
+            MAX(created_at) AS lastAuditTime
+        FROM content_audit_logs
+        WHERE content_type = #{contentType}
+        <if test="timeRange != null and timeRange != ''">
+            <choose>
+                <when test="timeRange == 'today'">
+                    AND DATE(created_at) = CURDATE()
+                </when>
+                <when test="timeRange == 'yesterday'">
+                    AND DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+                </when>
+                <when test="timeRange == 'week'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                </when>
+                <when test="timeRange == 'month'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                </when>
+                <when test="timeRange == 'year'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+                </when>
+            </choose>
+        </if>
+        GROUP BY content_type, content_id
+        ORDER BY auditCount DESC
+        <if test="limit != null and limit > 0">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 按理由分组统计 -->
+    <select id="selectAuditReasonStats" resultType="com.xystapp.entity.ContentAuditLog">
+        SELECT 
+            reason,
+            COUNT(*) AS reasonCount,
+            content_type AS contentType,
+            action
+        FROM content_audit_logs
+        WHERE reason IS NOT NULL AND reason != ''
+        <if test="timeRange != null and timeRange != ''">
+            <choose>
+                <when test="timeRange == 'today'">
+                    AND DATE(created_at) = CURDATE()
+                </when>
+                <when test="timeRange == 'yesterday'">
+                    AND DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+                </when>
+                <when test="timeRange == 'week'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                </when>
+                <when test="timeRange == 'month'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                </when>
+                <when test="timeRange == 'year'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+                </when>
+            </choose>
+        </if>
+        GROUP BY reason, content_type, action
+        ORDER BY reasonCount DESC
+    </select>
+
+    <!-- 获取重复审核内容 -->
+    <select id="selectRepeatedAuditContent" resultType="com.xystapp.entity.ContentAuditLog">
+        SELECT 
+            content_type AS contentType,
+            content_id AS contentId,
+            COUNT(*) AS auditCount,
+            GROUP_CONCAT(DISTINCT action ORDER BY created_at) AS actionSequence,
+            MIN(created_at) AS firstAuditTime,
+            MAX(created_at) AS lastAuditTime
+        FROM content_audit_logs
+        WHERE 1=1
+        <if test="timeRange != null and timeRange != ''">
+            <choose>
+                <when test="timeRange == 'today'">
+                    AND DATE(created_at) = CURDATE()
+                </when>
+                <when test="timeRange == 'yesterday'">
+                    AND DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+                </when>
+                <when test="timeRange == 'week'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                </when>
+                <when test="timeRange == 'month'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                </when>
+                <when test="timeRange == 'year'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+                </when>
+            </choose>
+        </if>
+        GROUP BY content_type, content_id
+        HAVING auditCount > 1
+        ORDER BY auditCount DESC
+    </select>
+
+    <!-- 统计管理员审核工作量 -->
+    <select id="selectAdminWorkloadStats" resultType="com.xystapp.entity.ContentAuditLog">
+        SELECT 
+            l.admin_id AS adminId,
+            l.admin_username AS adminUsername,
+            u.nickname AS adminNickname,
+            COUNT(*) AS totalAudits,
+            SUM(CASE WHEN l.action = 'approve' THEN 1 ELSE 0 END) AS approveCount,
+            SUM(CASE WHEN l.action = 'reject' THEN 1 ELSE 0 END) AS rejectCount,
+            SUM(CASE WHEN l.action = 'delete' THEN 1 ELSE 0 END) AS deleteCount,
+            SUM(CASE WHEN l.action = 'hide' THEN 1 ELSE 0 END) AS hideCount,
+            DATE(l.created_at) AS workDate
+        FROM content_audit_logs l
+        LEFT JOIN users u ON l.admin_id = u.id
+        WHERE 1=1
+        <if test="timeRange != null and timeRange != ''">
+            <choose>
+                <when test="timeRange == 'today'">
+                    AND DATE(l.created_at) = CURDATE()
+                </when>
+                <when test="timeRange == 'yesterday'">
+                    AND DATE(l.created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+                </when>
+                <when test="timeRange == 'week'">
+                    AND l.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                </when>
+                <when test="timeRange == 'month'">
+                    AND l.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                </when>
+                <when test="timeRange == 'year'">
+                    AND l.created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+                </when>
+            </choose>
+        </if>
+        GROUP BY l.admin_id, l.admin_username, u.nickname, DATE(l.created_at)
+        ORDER BY workDate DESC, totalAudits DESC
+    </select>
+
+    <!-- 获取审核质量统计 -->
+    <select id="selectAuditQualityStats" resultType="com.xystapp.entity.ContentAuditLog">
+        SELECT 
+            l.admin_id AS adminId,
+            l.admin_username AS adminUsername,
+            u.nickname AS adminNickname,
+            COUNT(*) AS totalAudits,
+            SUM(CASE WHEN l.action IN ('approve', 'restore') THEN 1 ELSE 0 END) AS positiveActions,
+            SUM(CASE WHEN l.action IN ('reject', 'delete', 'hide') THEN 1 ELSE 0 END) AS negativeActions,
+            CASE 
+                WHEN COUNT(*) = 0 THEN 0
+                ELSE SUM(CASE WHEN l.action IN ('approve', 'restore') THEN 1 ELSE 0 END) * 100.0 / COUNT(*)
+            END AS positiveRate
+        FROM content_audit_logs l
+        LEFT JOIN users u ON l.admin_id = u.id
+        WHERE 1=1
+        <if test="timeRange != null and timeRange != ''">
+            <choose>
+                <when test="timeRange == 'today'">
+                    AND DATE(l.created_at) = CURDATE()
+                </when>
+                <when test="timeRange == 'yesterday'">
+                    AND DATE(l.created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+                </when>
+                <when test="timeRange == 'week'">
+                    AND l.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                </when>
+                <when test="timeRange == 'month'">
+                    AND l.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                </when>
+                <when test="timeRange == 'year'">
+                    AND l.created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+                </when>
+            </choose>
+        </if>
+        GROUP BY l.admin_id, l.admin_username, u.nickname
+        ORDER BY totalAudits DESC
+    </select>
+
+    <!-- 按时间段统计审核分布 -->
+    <select id="selectAuditTimeDistribution" resultType="com.xystapp.entity.ContentAuditLog">
+        SELECT 
+            HOUR(created_at) AS hourOfDay,
+            COUNT(*) AS auditCount,
+            SUM(CASE WHEN action = 'approve' THEN 1 ELSE 0 END) AS approveCount,
+            SUM(CASE WHEN action = 'reject' THEN 1 ELSE 0 END) AS rejectCount
+        FROM content_audit_logs
+        WHERE 1=1
+        <if test="timeRange != null and timeRange != ''">
+            <choose>
+                <when test="timeRange == 'today'">
+                    AND DATE(created_at) = CURDATE()
+                </when>
+                <when test="timeRange == 'yesterday'">
+                    AND DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+                </when>
+                <when test="timeRange == 'week'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                </when>
+                <when test="timeRange == 'month'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                </when>
+                <when test="timeRange == 'year'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+                </when>
+            </choose>
+        </if>
+        GROUP BY HOUR(created_at)
+        ORDER BY hourOfDay
+    </select>
+
+    <!-- 获取待处理审核数量 -->
+    <select id="countPendingAudits" resultType="java.lang.Long">
+        SELECT 
+            CASE 
+                WHEN #{contentType} = 'post' THEN (SELECT COUNT(*) FROM posts WHERE status = 'draft')
+                WHEN #{contentType} = 'activity' THEN (SELECT COUNT(*) FROM activities WHERE status = 'draft')
+                WHEN #{contentType} = 'user' THEN (SELECT COUNT(*) FROM users WHERE status = 'inactive')
+                WHEN #{contentType} = 'field' THEN (SELECT COUNT(*) FROM fields WHERE status = 'inactive')
+                ELSE 0
+            END
+    </select>
+
+    <!-- 删除过期审核日志 -->
+    <delete id="deleteExpiredAuditLogs">
+        DELETE FROM content_audit_logs 
+        WHERE created_at &lt; DATE_SUB(NOW(), INTERVAL #{days} DAY)
+    </delete>
+
+    <!-- 批量插入审核日志 -->
+    <insert id="batchInsertAuditLogs">
+        INSERT INTO content_audit_logs (
+            admin_id, admin_username, content_type, content_id, action, reason, 
+            original_status, new_status, created_at
+        ) VALUES
+        <foreach collection="logs" item="log" separator=",">
+            (#{log.adminId}, #{log.adminUsername}, #{log.contentType}, #{log.contentId}, 
+             #{log.action}, #{log.reason}, #{log.originalStatus}, #{log.newStatus}, #{log.createdAt})
+        </foreach>
+    </insert>
+
+    <!-- 获取审核操作排行 -->
+    <select id="selectAuditActionRank" resultType="com.xystapp.entity.ContentAuditLog">
+        SELECT 
+            action,
+            COUNT(*) AS actionCount,
+            content_type AS contentType
+        FROM content_audit_logs
+        WHERE 1=1
+        <if test="timeRange != null and timeRange != ''">
+            <choose>
+                <when test="timeRange == 'today'">
+                    AND DATE(created_at) = CURDATE()
+                </when>
+                <when test="timeRange == 'yesterday'">
+                    AND DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+                </when>
+                <when test="timeRange == 'week'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                </when>
+                <when test="timeRange == 'month'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                </when>
+                <when test="timeRange == 'year'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+                </when>
+            </choose>
+        </if>
+        GROUP BY action, content_type
+        ORDER BY actionCount DESC
+        <if test="limit != null and limit > 0">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 获取审核内容类型分布 -->
+    <select id="selectContentTypeDistribution" resultType="com.xystapp.entity.ContentAuditLog">
+        SELECT 
+            content_type AS contentType,
+            COUNT(*) AS totalCount,
+            SUM(CASE WHEN action = 'approve' THEN 1 ELSE 0 END) AS approveCount,
+            SUM(CASE WHEN action = 'reject' THEN 1 ELSE 0 END) AS rejectCount,
+            SUM(CASE WHEN action = 'delete' THEN 1 ELSE 0 END) AS deleteCount,
+            SUM(CASE WHEN action = 'hide' THEN 1 ELSE 0 END) AS hideCount,
+            SUM(CASE WHEN action = 'restore' THEN 1 ELSE 0 END) AS restoreCount
+        FROM content_audit_logs
+        WHERE 1=1
+        <if test="timeRange != null and timeRange != ''">
+            <choose>
+                <when test="timeRange == 'today'">
+                    AND DATE(created_at) = CURDATE()
+                </when>
+                <when test="timeRange == 'yesterday'">
+                    AND DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+                </when>
+                <when test="timeRange == 'week'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                </when>
+                <when test="timeRange == 'month'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                </when>
+                <when test="timeRange == 'year'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+                </when>
+            </choose>
+        </if>
+        GROUP BY content_type
+        ORDER BY totalCount DESC
+    </select>
+
+    <!-- 统计审核响应时间 -->
+    <select id="selectAuditResponseTimeStats" resultType="com.xystapp.entity.ContentAuditLog">
+        SELECT 
+            content_type AS contentType,
+            AVG(TIMESTAMPDIFF(HOUR, content_created_at, audit_created_at)) AS avgResponseHours,
+            MIN(TIMESTAMPDIFF(HOUR, content_created_at, audit_created_at)) AS minResponseHours,
+            MAX(TIMESTAMPDIFF(HOUR, content_created_at, audit_created_at)) AS maxResponseHours,
+            COUNT(*) AS auditCount
+        FROM (
+            SELECT 
+                content_type,
+                content_id,
+                created_at AS audit_created_at,
+                CASE 
+                    WHEN content_type = 'post' THEN (SELECT created_at FROM posts WHERE id = content_id)
+                    WHEN content_type = 'activity' THEN (SELECT created_at FROM activities WHERE id = content_id)
+                    WHEN content_type = 'user' THEN (SELECT created_at FROM users WHERE id = content_id)
+                    WHEN content_type = 'field' THEN (SELECT created_at FROM fields WHERE id = content_id)
+                    ELSE NULL
+                END AS content_created_at
+            FROM content_audit_logs
+            WHERE 1=1
+            <if test="timeRange != null and timeRange != ''">
+                <choose>
+                    <when test="timeRange == 'today'">
+                        AND DATE(created_at) = CURDATE()
+                    </when>
+                    <when test="timeRange == 'yesterday'">
+                        AND DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+                    </when>
+                    <when test="timeRange == 'week'">
+                        AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                    </when>
+                    <when test="timeRange == 'month'">
+                        AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                    </when>
+                    <when test="timeRange == 'year'">
+                        AND created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+                    </when>
+                </choose>
+            </if>
+        ) AS audit_data
+        WHERE content_created_at IS NOT NULL
+        GROUP BY content_type
+        ORDER BY avgResponseHours
+    </select>
+
+    <!-- 获取审核异常记录 -->
+    <select id="selectAbnormalAuditRecords" resultType="com.xystapp.entity.ContentAuditLog">
+        SELECT 
+            l.*,
+            u.nickname AS admin_nickname,
+            u.avatar AS admin_avatar,
+            CASE 
+                WHEN l.content_type = 'post' THEN p.title
+                WHEN l.content_type = 'activity' THEN a.title
+                WHEN l.content_type = 'user' THEN u_target.nickname
+                WHEN l.content_type = 'field' THEN f.name
+                ELSE NULL
+            END AS content_title
+        FROM content_audit_logs l
+        LEFT JOIN users u ON l.admin_id = u.id
+        LEFT JOIN posts p ON l.content_type = 'post' AND l.content_id = p.id
+        LEFT JOIN activities a ON l.content_type = 'activity' AND l.content_id = a.id
+        LEFT JOIN users u_target ON l.content_type = 'user' AND l.content_id = u_target.id
+        LEFT JOIN fields f ON l.content_type = 'field' AND l.content_id = f.id
+        WHERE (
+            (l.reason IS NULL OR l.reason = '') AND l.action IN ('reject', 'delete', 'hide')
+            OR TIMESTAMPDIFF(HOUR, 
+                CASE 
+                    WHEN l.content_type = 'post' THEN (SELECT created_at FROM posts WHERE id = l.content_id)
+                    WHEN l.content_type = 'activity' THEN (SELECT created_at FROM activities WHERE id = l.content_id)
+                    WHEN l.content_type = 'user' THEN (SELECT created_at FROM users WHERE id = l.content_id)
+                    WHEN l.content_type = 'field' THEN (SELECT created_at FROM fields WHERE id = l.content_id)
+                    ELSE NULL
+                END, l.created_at) > 168
+        )
+        <if test="timeRange != null and timeRange != ''">
+            <choose>
+                <when test="timeRange == 'today'">
+                    AND DATE(l.created_at) = CURDATE()
+                </when>
+                <when test="timeRange == 'yesterday'">
+                    AND DATE(l.created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+                </when>
+                <when test="timeRange == 'week'">
+                    AND l.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                </when>
+                <when test="timeRange == 'month'">
+                    AND l.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                </when>
+                <when test="timeRange == 'year'">
+                    AND l.created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+                </when>
+            </choose>
+        </if>
+        ORDER BY l.created_at DESC
+        <if test="limit != null and limit > 0">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+</mapper>

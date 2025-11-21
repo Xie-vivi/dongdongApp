@@ -1,0 +1,665 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xystapp.mapper.AdminOperationLogMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="AdminOperationLogDetailMap" type="com.xystapp.entity.AdminOperationLog">
+        <id column="id" property="id"/>
+        <result column="admin_id" property="adminId"/>
+        <result column="admin_username" property="adminUsername"/>
+        <result column="operation_type" property="operationType"/>
+        <result column="operation_desc" property="operationDesc"/>
+        <result column="target_type" property="targetType"/>
+        <result column="target_id" property="targetId"/>
+        <result column="request_method" property="requestMethod"/>
+        <result column="request_url" property="requestUrl"/>
+        <result column="request_params" property="requestParams"/>
+        <result column="ip_address" property="ipAddress"/>
+        <result column="user_agent" property="userAgent"/>
+        <result column="status" property="status"/>
+        <result column="error_message" property="errorMessage"/>
+        <result column="execution_time" property="executionTime"/>
+        <result column="created_at" property="createdAt"/>
+        <!-- 临时字段 -->
+        <result column="admin_nickname" property="adminNickname"/>
+        <result column="admin_avatar" property="adminAvatar"/>
+        <result column="target_title" property="targetTitle"/>
+        <result column="can_revoke" property="canRevoke"/>
+    </resultMap>
+
+    <!-- 分页查询操作日志 -->
+    <select id="selectOperationLogs" resultMap="AdminOperationLogDetailMap">
+        SELECT 
+            l.*,
+            u.nickname AS admin_nickname,
+            u.avatar AS admin_avatar,
+            CASE 
+                WHEN l.target_type = 'post' THEN p.title
+                WHEN l.target_type = 'activity' THEN a.title
+                WHEN l.target_type = 'user' THEN u_target.nickname
+                WHEN l.target_type = 'field' THEN f.name
+                ELSE NULL
+            END AS target_title,
+            CASE 
+                WHEN l.created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR) THEN TRUE
+                ELSE FALSE
+            END AS can_revoke
+        FROM admin_operation_logs l
+        LEFT JOIN users u ON l.admin_id = u.id
+        LEFT JOIN posts p ON l.target_type = 'post' AND l.target_id = p.id
+        LEFT JOIN activities a ON l.target_type = 'activity' AND l.target_id = a.id
+        LEFT JOIN users u_target ON l.target_type = 'user' AND l.target_id = u_target.id
+        LEFT JOIN fields f ON l.target_type = 'field' AND l.target_id = f.id
+        WHERE 1=1
+        <if test="operationType != null and operationType != ''">
+            AND l.operation_type = #{operationType}
+        </if>
+        <if test="targetType != null and targetType != ''">
+            AND l.target_type = #{targetType}
+        </if>
+        <if test="adminId != null and adminId != ''">
+            AND l.admin_id = #{adminId}
+        </if>
+        <if test="timeRange != null and timeRange != ''">
+            <choose>
+                <when test="timeRange == 'today'">
+                    AND DATE(l.created_at) = CURDATE()
+                </when>
+                <when test="timeRange == 'yesterday'">
+                    AND DATE(l.created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+                </when>
+                <when test="timeRange == 'week'">
+                    AND l.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                </when>
+                <when test="timeRange == 'month'">
+                    AND l.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                </when>
+                <when test="timeRange == 'year'">
+                    AND l.created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+                </when>
+            </choose>
+        </if>
+        ORDER BY l.created_at DESC
+    </select>
+
+    <!-- 获取操作日志详情 -->
+    <select id="selectOperationLogDetail" resultMap="AdminOperationLogDetailMap">
+        SELECT 
+            l.*,
+            u.nickname AS admin_nickname,
+            u.avatar AS admin_avatar,
+            CASE 
+                WHEN l.target_type = 'post' THEN p.title
+                WHEN l.target_type = 'activity' THEN a.title
+                WHEN l.target_type = 'user' THEN u_target.nickname
+                WHEN l.target_type = 'field' THEN f.name
+                ELSE NULL
+            END AS target_title,
+            CASE 
+                WHEN l.created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR) THEN TRUE
+                ELSE FALSE
+            END AS can_revoke
+        FROM admin_operation_logs l
+        LEFT JOIN users u ON l.admin_id = u.id
+        LEFT JOIN posts p ON l.target_type = 'post' AND l.target_id = p.id
+        LEFT JOIN activities a ON l.target_type = 'activity' AND l.target_id = a.id
+        LEFT JOIN users u_target ON l.target_type = 'user' AND l.target_id = u_target.id
+        LEFT JOIN fields f ON l.target_type = 'field' AND l.target_id = f.id
+        WHERE l.id = #{logId}
+    </select>
+
+    <!-- 删除过期日志 -->
+    <delete id="deleteExpiredLogs">
+        DELETE FROM admin_operation_logs 
+        WHERE created_at &lt; DATE_SUB(NOW(), INTERVAL #{days} DAY)
+    </delete>
+
+    <!-- 按时间范围统计操作数量 -->
+    <select id="countOperationsByTimeRange" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM admin_operation_logs
+        WHERE 1=1
+        <if test="timeRange != null and timeRange != ''">
+            <choose>
+                <when test="timeRange == 'today'">
+                    AND DATE(created_at) = CURDATE()
+                </when>
+                <when test="timeRange == 'yesterday'">
+                    AND DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+                </when>
+                <when test="timeRange == 'week'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                </when>
+                <when test="timeRange == 'month'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                </when>
+                <when test="timeRange == 'year'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+                </when>
+            </choose>
+        </if>
+    </select>
+
+    <!-- 按时间范围统计成功操作数量 -->
+    <select id="countSuccessfulOperationsByTimeRange" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM admin_operation_logs
+        WHERE status = 'success'
+        <if test="timeRange != null and timeRange != ''">
+            <choose>
+                <when test="timeRange == 'today'">
+                    AND DATE(created_at) = CURDATE()
+                </when>
+                <when test="timeRange == 'yesterday'">
+                    AND DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+                </when>
+                <when test="timeRange == 'week'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                </when>
+                <when test="timeRange == 'month'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                </when>
+                <when test="timeRange == 'year'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+                </when>
+            </choose>
+        </if>
+    </select>
+
+    <!-- 按时间范围统计失败操作数量 -->
+    <select id="countFailedOperationsByTimeRange" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM admin_operation_logs
+        WHERE status = 'failed'
+        <if test="timeRange != null and timeRange != ''">
+            <choose>
+                <when test="timeRange == 'today'">
+                    AND DATE(created_at) = CURDATE()
+                </when>
+                <when test="timeRange == 'yesterday'">
+                    AND DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+                </when>
+                <when test="timeRange == 'week'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                </when>
+                <when test="timeRange == 'month'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                </when>
+                <when test="timeRange == 'year'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+                </when>
+            </choose>
+        </if>
+    </select>
+
+    <!-- 按时间范围统计活跃管理员数量 -->
+    <select id="countActiveAdminsByTimeRange" resultType="java.lang.Long">
+        SELECT COUNT(DISTINCT admin_id)
+        FROM admin_operation_logs
+        WHERE 1=1
+        <if test="timeRange != null and timeRange != ''">
+            <choose>
+                <when test="timeRange == 'today'">
+                    AND DATE(created_at) = CURDATE()
+                </when>
+                <when test="timeRange == 'yesterday'">
+                    AND DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+                </when>
+                <when test="timeRange == 'week'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                </when>
+                <when test="timeRange == 'month'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                </when>
+                <when test="timeRange == 'year'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+                </when>
+            </choose>
+        </if>
+    </select>
+
+    <!-- 获取管理员活动统计 -->
+    <select id="selectAdminActivities" resultType="com.xystapp.entity.AdminOperationLog">
+        SELECT 
+            l.admin_username,
+            u.nickname AS admin_nickname,
+            COUNT(*) AS operation_count,
+            MAX(l.created_at) AS last_operation_time
+        FROM admin_operation_logs l
+        LEFT JOIN users u ON l.admin_id = u.id
+        WHERE 1=1
+        <if test="timeRange != null and timeRange != ''">
+            <choose>
+                <when test="timeRange == 'today'">
+                    AND DATE(l.created_at) = CURDATE()
+                </when>
+                <when test="timeRange == 'yesterday'">
+                    AND DATE(l.created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+                </when>
+                <when test="timeRange == 'week'">
+                    AND l.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                </when>
+                <when test="timeRange == 'month'">
+                    AND l.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                </when>
+                <when test="timeRange == 'year'">
+                    AND l.created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+                </when>
+            </choose>
+        </if>
+        GROUP BY l.admin_id, l.admin_username, u.nickname
+        ORDER BY operation_count DESC
+    </select>
+
+    <!-- 导出操作日志 -->
+    <select id="selectOperationLogsForExport" resultType="com.xystapp.entity.AdminOperationLog">
+        SELECT 
+            l.*,
+            u.nickname AS admin_nickname,
+            u.avatar AS admin_avatar,
+            CASE 
+                WHEN l.target_type = 'post' THEN p.title
+                WHEN l.target_type = 'activity' THEN a.title
+                WHEN l.target_type = 'user' THEN u_target.nickname
+                WHEN l.target_type = 'field' THEN f.name
+                ELSE NULL
+            END AS target_title
+        FROM admin_operation_logs l
+        LEFT JOIN users u ON l.admin_id = u.id
+        LEFT JOIN posts p ON l.target_type = 'post' AND l.target_id = p.id
+        LEFT JOIN activities a ON l.target_type = 'activity' AND l.target_id = a.id
+        LEFT JOIN users u_target ON l.target_type = 'user' AND l.target_id = u_target.id
+        LEFT JOIN fields f ON l.target_type = 'field' AND l.target_id = f.id
+        WHERE 1=1
+        <if test="operationType != null and operationType != ''">
+            AND l.operation_type = #{operationType}
+        </if>
+        <if test="timeRange != null and timeRange != ''">
+            <choose>
+                <when test="timeRange == 'today'">
+                    AND DATE(l.created_at) = CURDATE()
+                </when>
+                <when test="timeRange == 'yesterday'">
+                    AND DATE(l.created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+                </when>
+                <when test="timeRange == 'week'">
+                    AND l.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                </when>
+                <when test="timeRange == 'month'">
+                    AND l.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                </when>
+                <when test="timeRange == 'year'">
+                    AND l.created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+                </when>
+            </choose>
+        </if>
+        ORDER BY l.created_at DESC
+    </select>
+
+    <!-- 统计操作类型分布 -->
+    <select id="selectOperationTypeStats" resultType="com.xystapp.entity.AdminOperationLog">
+        SELECT 
+            operation_type AS operationType,
+            COUNT(*) AS count,
+            COUNT(*) * 100.0 / (SELECT COUNT(*) FROM admin_operation_logs 
+                <if test="timeRange != null and timeRange != ''">
+                    <choose>
+                        <when test="timeRange == 'today'">
+                            WHERE DATE(created_at) = CURDATE()
+                        </when>
+                        <when test="timeRange == 'yesterday'">
+                            WHERE DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+                        </when>
+                        <when test="timeRange == 'week'">
+                            WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                        </when>
+                        <when test="timeRange == 'month'">
+                            WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                        </when>
+                        <when test="timeRange == 'year'">
+                            WHERE created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+                        </when>
+                    </choose>
+                </if>
+            ) AS percentage
+        FROM admin_operation_logs
+        WHERE 1=1
+        <if test="timeRange != null and timeRange != ''">
+            <choose>
+                <when test="timeRange == 'today'">
+                    AND DATE(created_at) = CURDATE()
+                </when>
+                <when test="timeRange == 'yesterday'">
+                    AND DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+                </when>
+                <when test="timeRange == 'week'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                </when>
+                <when test="timeRange == 'month'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                </when>
+                <when test="timeRange == 'year'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+                </when>
+            </choose>
+        </if>
+        GROUP BY operation_type
+        ORDER BY count DESC
+    </select>
+
+    <!-- 统计目标类型分布 -->
+    <select id="selectTargetTypeStats" resultType="com.xystapp.entity.AdminOperationLog">
+        SELECT 
+            target_type AS targetType,
+            COUNT(*) AS count,
+            COUNT(*) * 100.0 / (SELECT COUNT(*) FROM admin_operation_logs 
+                <if test="timeRange != null and timeRange != ''">
+                    <choose>
+                        <when test="timeRange == 'today'">
+                            WHERE DATE(created_at) = CURDATE()
+                        </when>
+                        <when test="timeRange == 'yesterday'">
+                            WHERE DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+                        </when>
+                        <when test="timeRange == 'week'">
+                            WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                        </when>
+                        <when test="timeRange == 'month'">
+                            WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                        </when>
+                        <when test="timeRange == 'year'">
+                            WHERE created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+                        </when>
+                    </choose>
+                </if>
+            ) AS percentage
+        FROM admin_operation_logs
+        WHERE 1=1
+        <if test="timeRange != null and timeRange != ''">
+            <choose>
+                <when test="timeRange == 'today'">
+                    AND DATE(created_at) = CURDATE()
+                </when>
+                <when test="timeRange == 'yesterday'">
+                    AND DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+                </when>
+                <when test="timeRange == 'week'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                </when>
+                <when test="timeRange == 'month'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                </when>
+                <when test="timeRange == 'year'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+                </when>
+            </choose>
+        </if>
+        GROUP BY target_type
+        ORDER BY count DESC
+    </select>
+
+    <!-- 获取管理员操作排行 -->
+    <select id="selectAdminOperationRank" resultType="com.xystapp.entity.AdminOperationLog">
+        SELECT 
+            l.admin_id AS adminId,
+            l.admin_username AS adminUsername,
+            u.nickname AS adminNickname,
+            COUNT(*) AS operationCount
+        FROM admin_operation_logs l
+        LEFT JOIN users u ON l.admin_id = u.id
+        WHERE 1=1
+        <if test="timeRange != null and timeRange != ''">
+            <choose>
+                <when test="timeRange == 'today'">
+                    AND DATE(l.created_at) = CURDATE()
+                </when>
+                <when test="timeRange == 'yesterday'">
+                    AND DATE(l.created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+                </when>
+                <when test="timeRange == 'week'">
+                    AND l.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                </when>
+                <when test="timeRange == 'month'">
+                    AND l.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                </when>
+                <when test="timeRange == 'year'">
+                    AND l.created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+                </when>
+            </choose>
+        </if>
+        GROUP BY l.admin_id, l.admin_username, u.nickname
+        ORDER BY operationCount DESC
+        <if test="limit != null and limit > 0">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 获取最近操作日志 -->
+    <select id="selectRecentOperations" resultType="com.xystapp.entity.AdminOperationLog">
+        SELECT 
+            l.*,
+            u.nickname AS admin_nickname,
+            u.avatar AS admin_avatar,
+            CASE 
+                WHEN l.target_type = 'post' THEN p.title
+                WHEN l.target_type = 'activity' THEN a.title
+                WHEN l.target_type = 'user' THEN u_target.nickname
+                WHEN l.target_type = 'field' THEN f.name
+                ELSE NULL
+            END AS target_title
+        FROM admin_operation_logs l
+        LEFT JOIN users u ON l.admin_id = u.id
+        LEFT JOIN posts p ON l.target_type = 'post' AND l.target_id = p.id
+        LEFT JOIN activities a ON l.target_type = 'activity' AND l.target_id = a.id
+        LEFT JOIN users u_target ON l.target_type = 'user' AND l.target_id = u_target.id
+        LEFT JOIN fields f ON l.target_type = 'field' AND l.target_id = f.id
+        ORDER BY l.created_at DESC
+        <if test="limit != null and limit > 0">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 按管理员ID查询操作日志 -->
+    <select id="selectOperationsByAdminId" resultType="com.xystapp.entity.AdminOperationLog">
+        SELECT 
+            l.*,
+            u.nickname AS admin_nickname,
+            u.avatar AS admin_avatar,
+            CASE 
+                WHEN l.target_type = 'post' THEN p.title
+                WHEN l.target_type = 'activity' THEN a.title
+                WHEN l.target_type = 'user' THEN u_target.nickname
+                WHEN l.target_type = 'field' THEN f.name
+                ELSE NULL
+            END AS target_title
+        FROM admin_operation_logs l
+        LEFT JOIN users u ON l.admin_id = u.id
+        LEFT JOIN posts p ON l.target_type = 'post' AND l.target_id = p.id
+        LEFT JOIN activities a ON l.target_type = 'activity' AND l.target_id = a.id
+        LEFT JOIN users u_target ON l.target_type = 'user' AND l.target_id = u_target.id
+        LEFT JOIN fields f ON l.target_type = 'field' AND l.target_id = f.id
+        WHERE l.admin_id = #{adminId}
+        ORDER BY l.created_at DESC
+        <if test="limit != null and limit > 0">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 按目标查询操作日志 -->
+    <select id="selectOperationsByTarget" resultType="com.xystapp.entity.AdminOperationLog">
+        SELECT 
+            l.*,
+            u.nickname AS admin_nickname,
+            u.avatar AS admin_avatar,
+            CASE 
+                WHEN l.target_type = 'post' THEN p.title
+                WHEN l.target_type = 'activity' THEN a.title
+                WHEN l.target_type = 'user' THEN u_target.nickname
+                WHEN l.target_type = 'field' THEN f.name
+                ELSE NULL
+            END AS target_title
+        FROM admin_operation_logs l
+        LEFT JOIN users u ON l.admin_id = u.id
+        LEFT JOIN posts p ON l.target_type = 'post' AND l.target_id = p.id
+        LEFT JOIN activities a ON l.target_type = 'activity' AND l.target_id = a.id
+        LEFT JOIN users u_target ON l.target_type = 'user' AND l.target_id = u_target.id
+        LEFT JOIN fields f ON l.target_type = 'field' AND l.target_id = f.id
+        WHERE l.target_type = #{targetType} AND l.target_id = #{targetId}
+        ORDER BY l.created_at DESC
+        <if test="limit != null and limit > 0">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 统计操作成功率 -->
+    <select id="selectOperationSuccessRate" resultType="java.lang.Double">
+        SELECT 
+            CASE 
+                WHEN total_count = 0 THEN 0.0
+                ELSE success_count * 100.0 / total_count
+            END AS success_rate
+        FROM (
+            SELECT 
+                COUNT(*) AS total_count,
+                SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END) AS success_count
+            FROM admin_operation_logs
+            WHERE 1=1
+            <if test="timeRange != null and timeRange != ''">
+                <choose>
+                    <when test="timeRange == 'today'">
+                        AND DATE(created_at) = CURDATE()
+                    </when>
+                    <when test="timeRange == 'yesterday'">
+                        AND DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+                    </when>
+                    <when test="timeRange == 'week'">
+                        AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                    </when>
+                    <when test="timeRange == 'month'">
+                        AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                    </when>
+                    <when test="timeRange == 'year'">
+                        AND created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+                    </when>
+                </choose>
+            </if>
+        ) AS stats
+    </select>
+
+    <!-- 获取操作趋势统计 -->
+    <select id="selectOperationTrend" resultType="com.xystapp.entity.AdminOperationLog">
+        SELECT 
+            DATE(created_at) AS date,
+            COUNT(*) AS operationCount,
+            SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END) AS successCount,
+            SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) AS failedCount
+        FROM admin_operation_logs
+        WHERE 1=1
+        <if test="timeRange != null and timeRange != ''">
+            <choose>
+                <when test="timeRange == 'today'">
+                    AND DATE(created_at) = CURDATE()
+                </when>
+                <when test="timeRange == 'yesterday'">
+                    AND DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+                </when>
+                <when test="timeRange == 'week'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                </when>
+                <when test="timeRange == 'month'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                </when>
+                <when test="timeRange == 'year'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+                </when>
+            </choose>
+        </if>
+        GROUP BY DATE(created_at)
+        ORDER BY date DESC
+    </select>
+
+    <!-- 按IP地址统计操作 -->
+    <select id="selectOperationsByIp" resultType="com.xystapp.entity.AdminOperationLog">
+        SELECT 
+            ip_address AS ipAddress,
+            COUNT(*) AS operationCount,
+            COUNT(DISTINCT admin_id) AS adminCount,
+            MIN(created_at) AS firstOperation,
+            MAX(created_at) AS lastOperation
+        FROM admin_operation_logs
+        WHERE ip_address = #{ipAddress}
+        GROUP BY ip_address
+        ORDER BY operationCount DESC
+        <if test="limit != null and limit > 0">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 获取异常操作日志 -->
+    <select id="selectErrorOperations" resultType="com.xystapp.entity.AdminOperationLog">
+        SELECT 
+            l.*,
+            u.nickname AS admin_nickname,
+            u.avatar AS admin_avatar
+        FROM admin_operation_logs l
+        LEFT JOIN users u ON l.admin_id = u.id
+        WHERE l.status = 'failed'
+        <if test="timeRange != null and timeRange != ''">
+            <choose>
+                <when test="timeRange == 'today'">
+                    AND DATE(l.created_at) = CURDATE()
+                </when>
+                <when test="timeRange == 'yesterday'">
+                    AND DATE(l.created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+                </when>
+                <when test="timeRange == 'week'">
+                    AND l.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                </when>
+                <when test="timeRange == 'month'">
+                    AND l.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                </when>
+                <when test="timeRange == 'year'">
+                    AND l.created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+                </when>
+            </choose>
+        </if>
+        ORDER BY l.created_at DESC
+        <if test="limit != null and limit > 0">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 统计执行时间 -->
+    <select id="selectExecutionTimeStats" resultType="com.xystapp.entity.AdminOperationLog">
+        SELECT 
+            operation_type AS operationType,
+            AVG(execution_time) AS avgExecutionTime,
+            MIN(execution_time) AS minExecutionTime,
+            MAX(execution_time) AS maxExecutionTime,
+            COUNT(*) AS operationCount
+        FROM admin_operation_logs
+        WHERE execution_time IS NOT NULL
+        <if test="timeRange != null and timeRange != ''">
+            <choose>
+                <when test="timeRange == 'today'">
+                    AND DATE(created_at) = CURDATE()
+                </when>
+                <when test="timeRange == 'yesterday'">
+                    AND DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+                </when>
+                <when test="timeRange == 'week'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                </when>
+                <when test="timeRange == 'month'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                </when>
+                <when test="timeRange == 'year'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+                </when>
+            </choose>
+        </if>
+        GROUP BY operation_type
+        ORDER BY avgExecutionTime DESC
+    </select>
+
+</mapper>

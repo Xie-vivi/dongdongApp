@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xystapp.mapper.MessageMapper">
+
+    <!-- 消息结果映射（包含用户信息） -->
+    <resultMap id="MessageWithUserInfoMap" type="com.xystapp.entity.Message">
+        <id column="id" property="id"/>
+        <result column="chat_id" property="chatId"/>
+        <result column="sender_id" property="senderId"/>
+        <result column="content_type" property="contentType"/>
+        <result column="content" property="content"/>
+        <result column="sender_name" property="senderName"/>
+        <result column="created_at" property="createdAt"/>
+        
+        <!-- 发送者信息 -->
+        <result column="username" property="senderUsername"/>
+        <result column="nickname" property="senderNickname"/>
+        <result column="avatar" property="senderAvatar"/>
+        
+        <!-- 聊天信息 -->
+        <result column="chat_name" property="chatName"/>
+        <result column="chat_type" property="chatType"/>
+    </resultMap>
+
+    <!-- 获取消息详情（包含用户信息） -->
+    <select id="selectMessageWithUserInfo" resultMap="MessageWithUserInfoMap">
+        SELECT 
+            m.id, m.chat_id, m.sender_id, m.content_type, m.content, m.sender_name, m.created_at,
+            u.username, u.nickname, u.avatar,
+            c.name as chat_name,
+            c.type as chat_type
+        FROM messages m
+        INNER JOIN users u ON m.sender_id = u.id
+        INNER JOIN chats c ON m.chat_id = c.id
+        WHERE m.id = #{messageId}
+    </select>
+
+    <!-- 获取聊天消息列表（包含用户信息） -->
+    <select id="selectMessagesByChatId" resultMap="MessageWithUserInfoMap">
+        SELECT 
+            m.id, m.chat_id, m.sender_id, m.content_type, m.content, m.sender_name, m.created_at,
+            u.username, u.nickname, u.avatar,
+            c.name as chat_name,
+            c.type as chat_type
+        FROM messages m
+        INNER JOIN users u ON m.sender_id = u.id
+        INNER JOIN chats c ON m.chat_id = c.id
+        WHERE m.chat_id = #{chatId}
+        ORDER BY m.created_at DESC
+    </select>
+
+    <!-- 获取最新消息 -->
+    <select id="selectLatestMessageByChatId" resultMap="MessageWithUserInfoMap">
+        SELECT 
+            m.id, m.chat_id, m.sender_id, m.content_type, m.content, m.sender_name, m.created_at,
+            u.username, u.nickname, u.avatar,
+            c.name as chat_name,
+            c.type as chat_type
+        FROM messages m
+        INNER JOIN users u ON m.sender_id = u.id
+        INNER JOIN chats c ON m.chat_id = c.id
+        WHERE m.chat_id = #{chatId}
+        ORDER BY m.created_at DESC
+        LIMIT 1
+    </select>
+
+    <!-- 获取未读消息 -->
+    <select id="selectUnreadMessages" resultMap="MessageWithUserInfoMap">
+        SELECT 
+            m.id, m.chat_id, m.sender_id, m.content_type, m.content, m.sender_name, m.created_at,
+            u.username, u.nickname, u.avatar,
+            c.name as chat_name,
+            c.type as chat_type
+        FROM messages m
+        INNER JOIN users u ON m.sender_id = u.id
+        INNER JOIN chats c ON m.chat_id = c.id
+        INNER JOIN chat_members cm ON m.chat_id = cm.chat_id AND cm.user_id = #{userId}
+        WHERE m.chat_id = #{chatId}
+        AND (cm.last_read_at IS NULL OR m.created_at > cm.last_read_at)
+        ORDER BY m.created_at ASC
+    </select>
+
+    <!-- 搜索消息 -->
+    <select id="searchMessages" resultMap="MessageWithUserInfoMap">
+        SELECT 
+            m.id, m.chat_id, m.sender_id, m.content_type, m.content, m.sender_name, m.created_at,
+            u.username, u.nickname, u.avatar,
+            c.name as chat_name,
+            c.type as chat_type
+        FROM messages m
+        INNER JOIN users u ON m.sender_id = u.id
+        INNER JOIN chats c ON m.chat_id = c.id
+        WHERE m.chat_id = #{chatId}
+        AND (m.content LIKE CONCAT('%', #{keyword}, '%')
+             OR u.username LIKE CONCAT('%', #{keyword}, '%')
+             OR u.nickname LIKE CONCAT('%', #{keyword}, '%'))
+        ORDER BY m.created_at DESC
+    </select>
+
+    <!-- 批量获取消息信息 -->
+    <select id="selectMessagesByIds" resultMap="MessageWithUserInfoMap">
+        SELECT 
+            m.id, m.chat_id, m.sender_id, m.content_type, m.content, m.sender_name, m.created_at,
+            u.username, u.nickname, u.avatar,
+            c.name as chat_name,
+            c.type as chat_type
+        FROM messages m
+        INNER JOIN users u ON m.sender_id = u.id
+        INNER JOIN chats c ON m.chat_id = c.id
+        INNER JOIN chat_members cm ON m.chat_id = cm.chat_id AND cm.user_id = #{userId}
+        WHERE m.id IN
+        <foreach collection="messageIds" item="messageId" open="(" separator="," close=")">
+            #{messageId}
+        </foreach>
+        ORDER BY m.created_at DESC
+    </select>
+
+    <!-- 删除聊天的所有消息 -->
+    <delete id="deleteMessagesByChatId">
+        DELETE FROM messages WHERE chat_id = #{chatId}
+    </delete>
+
+    <!-- 获取已读消息的用户ID列表 -->
+    <select id="selectReadUserIds" resultType="long">
+        SELECT cm.user_id
+        FROM chat_members cm
+        INNER JOIN messages m ON cm.chat_id = m.chat_id
+        WHERE m.id = #{messageId}
+        AND cm.last_read_at IS NOT NULL
+        AND cm.last_read_at >= m.created_at
+    </select>
+
+    <!-- 根据消息ID获取聊天ID -->
+    <select id="selectChatIdByMessageId" resultType="long">
+        SELECT chat_id FROM messages WHERE id = #{messageId}
+    </select>
+
+    <!-- ==================== 统计相关 ==================== -->
+
+    <!-- 统计聊天消息总数 -->
+    <select id="countMessagesByChatId" resultType="long">
+        SELECT COUNT(1) FROM messages WHERE chat_id = #{chatId}
+    </select>
+
+    <!-- 统计今日消息数量 -->
+    <select id="countTodayMessagesByChatId" resultType="long">
+        SELECT COUNT(1) 
+        FROM messages 
+        WHERE chat_id = #{chatId} 
+        AND DATE(created_at) = CURDATE()
+    </select>
+
+    <!-- 统计指定类型的消息数量 -->
+    <select id="countMessagesByType" resultType="long">
+        SELECT COUNT(1) 
+        FROM messages 
+        WHERE chat_id = #{chatId} 
+        AND content_type = #{contentType}
+    </select>
+
+    <!-- 统计用户发送的消息数量 -->
+    <select id="countMessagesByUserId" resultType="long">
+        SELECT COUNT(1) FROM messages WHERE sender_id = #{userId}
+    </select>
+
+    <!-- 统计用户今日发送的消息数量 -->
+    <select id="countTodayMessagesByUserId" resultType="long">
+        SELECT COUNT(1) 
+        FROM messages 
+        WHERE sender_id = #{userId} 
+        AND DATE(created_at) = CURDATE()
+    </select>
+
+    <!-- ==================== 业务查询 ==================== -->
+
+    <!-- 获取用户在指定时间范围内的消息 -->
+    <select id="selectMessagesByTimeRange" resultMap="MessageWithUserInfoMap">
+        SELECT 
+            m.id, m.chat_id, m.sender_id, m.content_type, m.content, m.sender_name, m.created_at,
+            u.username, u.nickname, u.avatar,
+            c.name as chat_name,
+            c.type as chat_type
+        FROM messages m
+        INNER JOIN users u ON m.sender_id = u.id
+        INNER JOIN chats c ON m.chat_id = c.id
+        WHERE m.sender_id = #{userId}
+        AND m.created_at BETWEEN #{startTime} AND #{endTime}
+        ORDER BY m.created_at DESC
+    </select>
+
+    <!-- 获取聊天中指定用户的消息 -->
+    <select id="selectMessagesByUserInChat" resultMap="MessageWithUserInfoMap">
+        SELECT 
+            m.id, m.chat_id, m.sender_id, m.content_type, m.content, m.sender_name, m.created_at,
+            u.username, u.nickname, u.avatar,
+            c.name as chat_name,
+            c.type as chat_type
+        FROM messages m
+        INNER JOIN users u ON m.sender_id = u.id
+        INNER JOIN chats c ON m.chat_id = c.id
+        WHERE m.chat_id = #{chatId} AND m.sender_id = #{userId}
+        ORDER BY m.created_at DESC
+    </select>
+
+    <!-- 获取图片消息列表 -->
+    <select id="selectImageMessages" resultMap="MessageWithUserInfoMap">
+        SELECT 
+            m.id, m.chat_id, m.sender_id, m.content_type, m.content, m.sender_name, m.created_at,
+            u.username, u.nickname, u.avatar,
+            c.name as chat_name,
+            c.type as chat_type
+        FROM messages m
+        INNER JOIN users u ON m.sender_id = u.id
+        INNER JOIN chats c ON m.chat_id = c.id
+        WHERE m.chat_id = #{chatId} AND m.content_type = 'image'
+        ORDER BY m.created_at DESC
+        <if test="limit != null">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 获取最近的N条消息 -->
+    <select id="selectRecentMessages" resultMap="MessageWithUserInfoMap">
+        SELECT 
+            m.id, m.chat_id, m.sender_id, m.content_type, m.content, m.sender_name, m.created_at,
+            u.username, u.nickname, u.avatar,
+            c.name as chat_name,
+            c.type as chat_type
+        FROM messages m
+        INNER JOIN users u ON m.sender_id = u.id
+        INNER JOIN chats c ON m.chat_id = c.id
+        WHERE m.chat_id = #{chatId}
+        ORDER BY m.created_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 检查消息是否存在 -->
+    <select id="messageExists" resultType="boolean">
+        SELECT COUNT(1) > 0 FROM messages WHERE id = #{messageId}
+    </select>
+
+    <!-- 检查用户是否是消息发送者 -->
+    <select id="isMessageSender" resultType="boolean">
+        SELECT COUNT(1) > 0 
+        FROM messages 
+        WHERE id = #{messageId} AND sender_id = #{userId}
+    </select>
+
+    <!-- 获取消息发送时间 -->
+    <select id="selectMessageCreatedAt" resultType="java.time.LocalDateTime">
+        SELECT created_at FROM messages WHERE id = #{messageId}
+    </select>
+
+</mapper>

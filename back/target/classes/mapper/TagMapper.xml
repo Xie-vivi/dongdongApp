@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xystapp.mapper.TagMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.xystapp.entity.Tag">
+        <id column="id" property="id" />
+        <result column="name" property="name" />
+        <result column="color" property="color" />
+        <result column="description" property="description" />
+        <result column="sort_order" property="sortOrder" />
+        <result column="is_active" property="isActive" />
+        <result column="created_at" property="createdAt" />
+        <result column="updated_at" property="updatedAt" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, name, color, description, sort_order, is_active, created_at, updated_at
+    </sql>
+
+    <!-- 分页查询启用的标签 -->
+    <select id="selectActiveTagsPage" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List" />
+        FROM tags
+        WHERE is_active = 1
+        ORDER BY sort_order ASC, created_at DESC
+    </select>
+
+    <!-- 根据场地ID查询标签列表 -->
+    <select id="selectTagsByFieldId" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List" />
+        FROM tags t
+        INNER JOIN field_tags ft ON t.id = ft.tag_id
+        WHERE ft.field_id = #{fieldId} AND t.is_active = 1
+        ORDER BY t.sort_order ASC
+    </select>
+
+    <!-- 根据名称查询标签 -->
+    <select id="selectByName" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List" />
+        FROM tags
+        WHERE name = #{name}
+        LIMIT 1
+    </select>
+
+    <!-- 获取标签使用统计 -->
+    <select id="selectTagsWithUsageCount" resultType="com.xystapp.entity.Tag">
+        SELECT 
+            t.id, t.name, t.color, t.description, t.sort_order, t.is_active, 
+            t.created_at, t.updated_at,
+            COUNT(ft.field_id) as usageCount
+        FROM tags t
+        LEFT JOIN field_tags ft ON t.id = ft.tag_id
+        WHERE t.is_active = 1
+        GROUP BY t.id, t.name, t.color, t.description, t.sort_order, t.is_active, t.created_at, t.updated_at
+        ORDER BY usageCount DESC, t.sort_order ASC
+    </select>
+
+    <!-- 查询热门标签 -->
+    <select id="selectPopularTags" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List" />
+        FROM tags t
+        INNER JOIN field_tags ft ON t.id = ft.tag_id
+        WHERE t.is_active = 1
+        GROUP BY t.id
+        ORDER BY COUNT(ft.field_id) DESC, t.sort_order ASC
+        <if test="limit != null">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+</mapper>

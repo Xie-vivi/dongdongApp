@@ -1,0 +1,403 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xystapp.mapper.UserMapper">
+
+    <!-- 用户基础结果映射 -->
+    <resultMap id="BaseResultMap" type="com.xystapp.entity.User">
+        <id column="id" property="id" />
+        <result column="username" property="username" />
+        <result column="password" property="password" />
+        <result column="nickname" property="nickname" />
+        <result column="avatar" property="avatar" />
+        <result column="background" property="background" />
+        <result column="bio" property="bio" />
+        <result column="gender" property="gender" />
+        <result column="birthday" property="birthday" />
+        <result column="age" property="age" />
+        <result column="is_certified" property="isCertified" />
+        <result column="school" property="school" />
+        <result column="school_certified" property="schoolCertified" />
+        <result column="uid" property="uid" />
+        <result column="location" property="location" />
+        <result column="mbti" property="mbti" />
+        <result column="show_gender" property="showGender" />
+        <result column="show_age" property="showAge" />
+        <result column="show_mbti" property="showMbti" />
+        <result column="followers_count" property="followersCount" />
+        <result column="following_count" property="followingCount" />
+        <result column="field_count" property="fieldCount" />
+        <result column="status" property="status" />
+        <result column="created_at" property="createdAt" />
+        <result column="updated_at" property="updatedAt" />
+    </resultMap>
+
+    <!-- 用户基础列 -->
+    <sql id="Base_Column_List">
+        id, username, password, nickname, avatar, background, bio, gender, birthday, age,
+        is_certified, school, school_certified, uid, location, mbti, show_gender, show_age,
+        show_mbti, followers_count, following_count, field_count, status, created_at, updated_at
+    </sql>
+
+    <!-- 根据用户名查询用户 -->
+    <select id="selectByUsername" parameterType="string" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List" />
+        FROM users
+        WHERE username = #{username}
+    </select>
+
+    <!-- 根据UID查询用户 -->
+    <select id="selectByUid" parameterType="string" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List" />
+        FROM users
+        WHERE uid = #{uid}
+    </select>
+
+    <!-- 分页查询用户列表 -->
+    <select id="selectUserPage" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List" />
+        FROM users
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (username LIKE CONCAT('%', #{keyword}, '%')
+                OR nickname LIKE CONCAT('%', #{keyword}, '%')
+                OR uid LIKE CONCAT('%', #{keyword}, '%')
+                OR school LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            AND status = 'active'
+        </where>
+        ORDER BY 
+        <choose>
+            <when test="sortBy == 'created_at'">created_at</when>
+            <when test="sortBy == 'followers_count'">followers_count</when>
+            <when test="sortBy == 'following_count'">following_count</when>
+            <otherwise>created_at</otherwise>
+        </choose>
+        <choose>
+            <when test="sortOrder == 'asc'">ASC</when>
+            <otherwise>DESC</otherwise>
+        </choose>
+    </select>
+
+    <!-- 检查用户名是否存在 -->
+    <select id="existsByUsername" parameterType="string" resultType="boolean">
+        SELECT COUNT(1) > 0
+        FROM users
+        WHERE username = #{username}
+    </select>
+
+    <!-- 检查UID是否存在 -->
+    <select id="existsByUid" parameterType="string" resultType="boolean">
+        SELECT COUNT(1) > 0
+        FROM users
+        WHERE uid = #{uid}
+    </select>
+
+    <!-- 更新用户状态 -->
+    <update id="updateUserStatus">
+        UPDATE users
+        SET status = #{status}, updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 更新用户关注数 -->
+    <update id="updateFollowingCount">
+        UPDATE users 
+        SET following_count = GREATEST(following_count + #{delta}, 0), updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 更新用户粉丝数 -->
+    <update id="updateFollowersCount">
+        UPDATE users 
+        SET followers_count = GREATEST(followers_count + #{delta}, 0), updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 批量查询用户信息 -->
+    <select id="selectUserByIds" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List" />
+        FROM users
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        AND status = 'active'
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 获取用户统计信息 -->
+    <select id="getUserStats" parameterType="long" resultType="map">
+        SELECT 
+            followers_count as followersCount,
+            following_count as followingCount,
+            field_count as fieldCount,
+            is_certified as isCertified,
+            school_certified as schoolCertified,
+            (SELECT COUNT(*) FROM posts WHERE user_id = #{id}) as postCount,
+            (SELECT COUNT(*) FROM activities WHERE user_id = #{id}) as activityCount
+        FROM users
+        WHERE id = #{id}
+    </select>
+
+    <!-- ==================== 管理员功能相关方法 ==================== -->
+
+    <!-- 分页查询用户列表（管理员用） -->
+    <select id="selectUserListForAdmin" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List" />
+        FROM users
+        WHERE 1=1
+        <if test="keyword != null and keyword != ''">
+            AND (username LIKE CONCAT('%', #{keyword}, '%') 
+                 OR nickname LIKE CONCAT('%', #{keyword}, '%') 
+                 OR school LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        <if test="role != null and role != ''">
+            AND role = #{role}
+        </if>
+        <if test="status != null and status != ''">
+            AND status = #{status}
+        </if>
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 统计活跃用户数量 -->
+    <select id="countActiveUsers" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM users
+        WHERE status = 'active' 
+        AND updated_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+    </select>
+
+    <!-- 按时间范围统计用户数量 -->
+    <select id="countUsersByTimeRange" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM users
+        WHERE 1=1
+        <choose>
+            <when test="timeRange == 'today'">
+                AND DATE(created_at) = CURDATE()
+            </when>
+            <when test="timeRange == 'yesterday'">
+                AND DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+            </when>
+            <when test="timeRange == 'week'">
+                AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+            </when>
+            <when test="timeRange == 'month'">
+                AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+            </when>
+            <when test="timeRange == 'year'">
+                AND created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+            </when>
+        </choose>
+    </select>
+
+    <!-- 按时间范围统计活跃用户数量 -->
+    <select id="countActiveUsersByTimeRange" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM users
+        WHERE status = 'active'
+        <choose>
+            <when test="timeRange == 'today'">
+                AND DATE(updated_at) = CURDATE()
+            </when>
+            <when test="timeRange == 'yesterday'">
+                AND DATE(updated_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+            </when>
+            <when test="timeRange == 'week'">
+                AND updated_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+            </when>
+            <when test="timeRange == 'month'">
+                AND updated_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+            </when>
+            <when test="timeRange == 'year'">
+                AND updated_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+            </when>
+        </choose>
+    </select>
+
+    <!-- 统计被封禁用户数量 -->
+    <select id="countBannedUsers" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM users
+        WHERE status = 'inactive'
+    </select>
+
+    <!-- 统计已认证用户数量 -->
+    <select id="countCertifiedUsers" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM users
+        WHERE is_certified = 1 OR school_certified = 1
+    </select>
+
+    <!-- 获取用户趋势统计 -->
+    <select id="selectUserTrends" resultType="com.xystapp.entity.User">
+        SELECT 
+            DATE(created_at) AS date,
+            COUNT(*) AS newUsers,
+            SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) AS activeUsers
+        FROM users
+        <choose>
+            <when test="timeRange == 'today'">
+                WHERE DATE(created_at) = CURDATE()
+            </when>
+            <when test="timeRange == 'yesterday'">
+                WHERE DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+            </when>
+            <when test="timeRange == 'week'">
+                WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+            </when>
+            <when test="timeRange == 'month'">
+                WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+            </when>
+            <when test="timeRange == 'year'">
+                WHERE created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+            </when>
+        </choose>
+        GROUP BY DATE(created_at)
+        ORDER BY date DESC
+    </select>
+
+    <!-- 统计待审核用户数量 -->
+    <select id="countPendingUsers" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM users
+        WHERE status = 'inactive' AND is_certified = 0
+    </select>
+
+    <!-- 获取待审核用户列表 -->
+    <select id="selectPendingUsers" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List" />
+        FROM users
+        WHERE status = 'inactive' AND is_certified = 0
+        ORDER BY created_at ASC
+        <if test="page != null and size != null">
+            LIMIT #{size} OFFSET #{page}
+        </if>
+    </select>
+
+    <!-- 导出用户数据 -->
+    <select id="selectUsersForExport" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List" />
+        FROM users
+        WHERE 1=1
+        <if test="role != null and role != ''">
+            AND role = #{role}
+        </if>
+        <if test="status != null and status != ''">
+            AND status = #{status}
+        </if>
+        <if test="timeRange != null and timeRange != ''">
+            <choose>
+                <when test="timeRange == 'today'">
+                    AND DATE(created_at) = CURDATE()
+                </when>
+                <when test="timeRange == 'yesterday'">
+                    AND DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+                </when>
+                <when test="timeRange == 'week'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                </when>
+                <when test="timeRange == 'month'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                </when>
+                <when test="timeRange == 'year'">
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+                </when>
+            </choose>
+        </if>
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- ==================== 搜索相关SQL ==================== -->
+
+    <!-- 全文搜索用户 -->
+    <select id="searchUsersByKeyword" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List" />
+        FROM users
+        WHERE status = 'active'
+        AND (
+            MATCH(username) AGAINST(#{keyword} IN BOOLEAN MODE) * 2 +
+            MATCH(nickname) AGAINST(#{keyword} IN BOOLEAN MODE) * 2 +
+            MATCH(school) AGAINST(#{keyword} IN BOOLEAN MODE) * 1 > 0
+        )
+        ORDER BY (
+            MATCH(username) AGAINST(#{keyword} IN BOOLEAN MODE) * 2 +
+            MATCH(nickname) AGAINST(#{keyword} IN BOOLEAN MODE) * 2 +
+            MATCH(school) AGAINST(#{keyword} IN BOOLEAN MODE) * 1
+        ) DESC, created_at DESC
+        LIMIT #{page}, #{size}
+    </select>
+
+    <!-- 统计搜索结果数量 -->
+    <select id="countSearchUsersByKeyword" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM users
+        WHERE status = 'active'
+        AND (
+            MATCH(username) AGAINST(#{keyword} IN BOOLEAN MODE) * 2 +
+            MATCH(nickname) AGAINST(#{keyword} IN BOOLEAN MODE) * 2 +
+            MATCH(school) AGAINST(#{keyword} IN BOOLEAN MODE) * 1 > 0
+        )
+    </select>
+
+    <!-- 按学校搜索用户 -->
+    <select id="selectUsersBySchool" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List" />
+        FROM users
+        WHERE status = 'active'
+        AND school LIKE CONCAT('%', #{school}, '%')
+        ORDER BY created_at DESC
+        LIMIT #{page}, #{size}
+    </select>
+
+    <!-- 按MBTI搜索用户 -->
+    <select id="selectUsersByMbti" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List" />
+        FROM users
+        WHERE status = 'active'
+        AND mbti = #{mbti}
+        ORDER BY created_at DESC
+        LIMIT #{page}, #{size}
+    </select>
+
+    <!-- 按地点搜索用户 -->
+    <select id="selectUsersByLocation" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List" />
+        FROM users
+        WHERE status = 'active'
+        AND location LIKE CONCAT('%', #{location}, '%')
+        ORDER BY created_at DESC
+        LIMIT #{page}, #{size}
+    </select>
+
+    <!-- 获取相似用户（基于学校、MBTI等） -->
+    <select id="selectSimilarUsers" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List" />
+        FROM users
+        WHERE id != #{userId}
+        AND status = 'active'
+        AND (
+            school = (SELECT school FROM users WHERE id = #{userId})
+            OR mbti = (SELECT mbti FROM users WHERE id = #{userId})
+            OR location = (SELECT location FROM users WHERE id = #{userId})
+        )
+        ORDER BY created_at DESC
+        <if test="limit != null and limit > 0">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+</mapper>

@@ -1,0 +1,540 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xystapp.mapper.ActivityMapper">
+
+    <!-- 活动结果映射（包含用户信息） -->
+    <resultMap id="ActivityWithUserMap" type="com.xystapp.entity.Activity">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="title" property="title"/>
+        <result column="description" property="description"/>
+        <result column="date" property="date"/>
+        <result column="day" property="day"/>
+        <result column="time" property="time"/>
+        <result column="location" property="location"/>
+        <result column="tag" property="tag"/>
+        <result column="participants" property="participants"/>
+        <result column="max_participants" property="maxParticipants"/>
+        <result column="likes_count" property="likesCount"/>
+        <result column="comments_count" property="commentsCount"/>
+        <result column="images" property="images"/>
+        <result column="signup_deadline" property="signupDeadline"/>
+        <result column="image" property="image"/>
+        <result column="status" property="status"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+        
+        <!-- 用户信息（关联字段） -->
+        <result column="username" property="username"/>
+        <result column="nickname" property="nickname"/>
+        <result column="avatar" property="avatar"/>
+    </resultMap>
+
+    <!-- 分页查询活动列表（包含用户信息） -->
+    <select id="selectActivitiesWithUser" resultMap="ActivityWithUserMap">
+        SELECT 
+            a.id, a.user_id, a.title, a.description, a.date, a.day, a.time, a.location, a.tag,
+            a.participants, a.max_participants, a.likes_count, a.comments_count, a.images,
+            a.signup_deadline, a.image, a.status, a.created_at, a.updated_at,
+            u.username, u.nickname, u.avatar
+        FROM activities a
+        LEFT JOIN users u ON a.user_id = u.id
+        <where>
+            <if test="query.status != null and query.status != ''">
+                AND a.status = #{query.status}
+            </if>
+            <if test="query.userId != null">
+                AND a.user_id = #{query.userId}
+            </if>
+            <if test="query.tag != null and query.tag != ''">
+                AND a.tag = #{query.tag}
+            </if>
+            <if test="query.location != null and query.location != ''">
+                AND a.location LIKE CONCAT('%', #{query.location}, '%')
+            </if>
+            <if test="query.startDate != null">
+                AND a.date >= #{query.startDate}
+            </if>
+            <if test="query.endDate != null">
+                AND a.date &lt;= #{query.endDate}
+            </if>
+            <if test="query.keyword != null and query.keyword != ''">
+                AND (a.title LIKE CONCAT('%', #{query.keyword}, '%') 
+                     OR a.description LIKE CONCAT('%', #{query.keyword}, '%')
+                     OR a.location LIKE CONCAT('%', #{query.keyword}, '%')
+                     OR u.nickname LIKE CONCAT('%', #{query.keyword}, '%')
+                     OR u.username LIKE CONCAT('%', #{query.keyword}, '%'))
+            </if>
+        </where>
+        <choose>
+            <when test="query.sortBy == 'created_at'">
+                ORDER BY a.created_at
+            </when>
+            <when test="query.sortBy == 'updated_at'">
+                ORDER BY a.updated_at
+            </when>
+            <when test="query.sortBy == 'date'">
+                ORDER BY a.date
+            </when>
+            <when test="query.sortBy == 'likes_count'">
+                ORDER BY a.likes_count
+            </when>
+            <when test="query.sortBy == 'participants'">
+                ORDER BY a.participants
+            </when>
+            <otherwise>
+                ORDER BY a.date
+            </otherwise>
+        </choose>
+        <choose>
+            <when test="query.sortOrder == 'desc'">
+                DESC
+            </when>
+            <otherwise>
+                ASC
+            </otherwise>
+        </choose>
+    </select>
+
+    <!-- 根据ID查询活动详情（包含用户信息） -->
+    <select id="selectActivityWithUserById" resultMap="ActivityWithUserMap">
+        SELECT 
+            a.id, a.user_id, a.title, a.description, a.date, a.day, a.time, a.location, a.tag,
+            a.participants, a.max_participants, a.likes_count, a.comments_count, a.images,
+            a.signup_deadline, a.image, a.status, a.created_at, a.updated_at,
+            u.username, u.nickname, u.avatar
+        FROM activities a
+        LEFT JOIN users u ON a.user_id = u.id
+        WHERE a.id = #{id}
+    </select>
+
+    <!-- 查询用户的活动列表 -->
+    <select id="selectActivitiesByUserId" resultMap="ActivityWithUserMap">
+        SELECT 
+            a.id, a.user_id, a.title, a.description, a.date, a.day, a.time, a.location, a.tag,
+            a.participants, a.max_participants, a.likes_count, a.comments_count, a.images,
+            a.signup_deadline, a.image, a.status, a.created_at, a.updated_at,
+            u.username, u.nickname, u.avatar
+        FROM activities a
+        LEFT JOIN users u ON a.user_id = u.id
+        WHERE a.user_id = #{userId}
+        <if test="status != null and status != ''">
+            AND a.status = #{status}
+        </if>
+        ORDER BY a.date ASC, a.created_at DESC
+    </select>
+
+    <!-- 查询用户报名的活动列表 -->
+    <select id="selectSignedUpActivities" resultMap="ActivityWithUserMap">
+        SELECT 
+            a.id, a.user_id, a.title, a.description, a.date, a.day, a.time, a.location, a.tag,
+            a.participants, a.max_participants, a.likes_count, a.comments_count, a.images,
+            a.signup_deadline, a.image, a.status, a.created_at, a.updated_at,
+            u.username, u.nickname, u.avatar
+        FROM activities a
+        LEFT JOIN users u ON a.user_id = u.id
+        INNER JOIN activity_signups s ON a.id = s.activity_id
+        WHERE s.user_id = #{userId} AND s.status = 'confirmed'
+        ORDER BY a.date ASC
+    </select>
+
+    <!-- 更新活动统计信息 -->
+    <update id="updateActivityStats">
+        UPDATE activities 
+        SET 
+            <if test="likesCount != null">
+                likes_count = #{likesCount},
+            </if>
+            <if test="commentsCount != null">
+                comments_count = #{commentsCount},
+            </if>
+            <if test="participants != null">
+                participants = #{participants},
+            </if>
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 批量查询活动信息 -->
+    <select id="selectActivitiesByIds" resultMap="ActivityWithUserMap">
+        SELECT 
+            a.id, a.user_id, a.title, a.description, a.date, a.day, a.time, a.location, a.tag,
+            a.participants, a.max_participants, a.likes_count, a.comments_count, a.images,
+            a.signup_deadline, a.image, a.status, a.created_at, a.updated_at,
+            u.username, u.nickname, u.avatar
+        FROM activities a
+        LEFT JOIN users u ON a.user_id = u.id
+        WHERE a.id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        ORDER BY a.date ASC
+    </select>
+
+    <!-- 检查用户是否是活动组织者 -->
+    <select id="isActivityOwner" resultType="boolean">
+        SELECT COUNT(1) > 0
+        FROM activities
+        WHERE id = #{activityId} AND user_id = #{userId}
+    </select>
+
+    <!-- 检查用户是否已报名活动 -->
+    <select id="isUserSignedUp" resultType="boolean">
+        SELECT COUNT(1) > 0
+        FROM activity_signups
+        WHERE activity_id = #{activityId} AND user_id = #{userId} AND status = 'confirmed'
+    </select>
+
+    <!-- 获取活动当前报名人数 -->
+    <select id="getActivityParticipantCount" resultType="int">
+        SELECT COUNT(1)
+        FROM activity_signups
+        WHERE activity_id = #{activityId} AND status = 'confirmed'
+    </select>
+
+    <!-- 增加活动参与人数 -->
+    <update id="incrementParticipants">
+        UPDATE activities 
+        SET participants = participants + 1, updated_at = NOW()
+        WHERE id = #{activityId}
+    </update>
+
+    <!-- 减少活动参与人数 -->
+    <update id="decrementParticipants">
+        UPDATE activities 
+        SET participants = GREATEST(participants - 1, 0), updated_at = NOW()
+        WHERE id = #{activityId}
+    </update>
+
+    <!-- 查询即将开始的活动 -->
+    <select id="selectUpcomingActivities" resultMap="ActivityWithUserMap">
+        SELECT 
+            a.id, a.user_id, a.title, a.description, a.date, a.day, a.time, a.location, a.tag,
+            a.participants, a.max_participants, a.likes_count, a.comments_count, a.images,
+            a.signup_deadline, a.image, a.status, a.created_at, a.updated_at,
+            u.username, u.nickname, u.avatar
+        FROM activities a
+        LEFT JOIN users u ON a.user_id = u.id
+        WHERE a.status = 'published' 
+        AND a.date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL #{days} DAY)
+        ORDER BY a.date ASC, a.created_at DESC
+    </select>
+
+    <!-- 查询热门活动（按参与人数排序） -->
+    <select id="selectPopularActivities" resultMap="ActivityWithUserMap">
+        SELECT 
+            a.id, a.user_id, a.title, a.description, a.date, a.day, a.time, a.location, a.tag,
+            a.participants, a.max_participants, a.likes_count, a.comments_count, a.images,
+            a.signup_deadline, a.image, a.status, a.created_at, a.updated_at,
+            u.username, u.nickname, u.avatar
+        FROM activities a
+        LEFT JOIN users u ON a.user_id = u.id
+        WHERE a.status = 'published' AND a.date >= CURDATE()
+        ORDER BY a.participants DESC, a.likes_count DESC
+        <if test="limit != null">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 更新活动点赞数 -->
+    <update id="updateLikesCount">
+        UPDATE activities 
+        SET likes_count = GREATEST(likes_count + #{delta}, 0), updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 更新活动收藏数 -->
+    <update id="updateStarsCount">
+        UPDATE activities 
+        SET stars_count = GREATEST(stars_count + #{delta}, 0), updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 更新活动评论数 -->
+    <update id="updateCommentsCount">
+        UPDATE activities 
+        SET comments_count = GREATEST(comments_count + #{delta}, 0), updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- ==================== 管理员功能相关方法 ==================== -->
+
+    <!-- 获取待审核活动列表 -->
+    <select id="selectPendingActivities" resultMap="ActivityWithUserMap">
+        SELECT 
+            a.id, a.user_id, a.title, a.description, a.date, a.day, a.time, a.location, a.tag,
+            a.participants, a.max_participants, a.likes_count, a.comments_count, a.images,
+            a.signup_deadline, a.image, a.status, a.created_at, a.updated_at,
+            u.username, u.nickname, u.avatar
+        FROM activities a
+        LEFT JOIN users u ON a.user_id = u.id
+        WHERE a.status = 'draft'
+        ORDER BY a.created_at ASC
+        <if test="page != null and size != null">
+            LIMIT #{size} OFFSET #{page}
+        </if>
+    </select>
+
+    <!-- 统计待审核活动数量 -->
+    <select id="countPendingActivities" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM activities
+        WHERE status = 'draft'
+    </select>
+
+    <!-- 按时间范围统计活动数量 -->
+    <select id="countActivitiesByTimeRange" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM activities
+        WHERE 1=1
+        <choose>
+            <when test="timeRange == 'today'">
+                AND DATE(created_at) = CURDATE()
+            </when>
+            <when test="timeRange == 'yesterday'">
+                AND DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+            </when>
+            <when test="timeRange == 'week'">
+                AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+            </when>
+            <when test="timeRange == 'month'">
+                AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+            </when>
+            <when test="timeRange == 'year'">
+                AND created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+            </when>
+        </choose>
+    </select>
+
+    <!-- 获取热门活动 -->
+    <select id="selectHotActivities" resultMap="ActivityWithUserMap">
+        SELECT 
+            a.id, a.user_id, a.title, a.description, a.date, a.day, a.time, a.location, a.tag,
+            a.participants, a.max_participants, a.likes_count, a.comments_count, a.images,
+            a.signup_deadline, a.image, a.status, a.created_at, a.updated_at,
+            u.username, u.nickname, u.avatar
+        FROM activities a
+        LEFT JOIN users u ON a.user_id = u.id
+        WHERE a.status = 'published'
+        ORDER BY a.participants DESC, a.likes_count DESC, a.created_at DESC
+        <if test="limit != null and limit > 0">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- ==================== 搜索相关SQL ==================== -->
+
+    <!-- 全文搜索活动 -->
+    <select id="searchActivitiesByKeyword" resultMap="ActivityWithUserMap">
+        SELECT 
+            a.id, a.user_id, a.title, a.description, a.date, a.day, a.time, a.location, a.tag,
+            a.participants, a.max_participants, a.likes_count, a.comments_count, a.images,
+            a.signup_deadline, a.image, a.status, a.created_at, a.updated_at,
+            u.username, u.nickname, u.avatar
+        FROM activities a
+        LEFT JOIN users u ON a.user_id = u.id
+        WHERE a.status = 'published'
+        AND (
+            MATCH(a.title) AGAINST(#{keyword} IN BOOLEAN MODE) * 3 +
+            MATCH(a.description) AGAINST(#{keyword} IN BOOLEAN MODE) * 1 +
+            MATCH(a.location) AGAINST(#{keyword} IN BOOLEAN MODE) * 2 > 0
+        )
+        ORDER BY (
+            MATCH(a.title) AGAINST(#{keyword} IN BOOLEAN MODE) * 3 +
+            MATCH(a.description) AGAINST(#{keyword} IN BOOLEAN MODE) * 1 +
+            MATCH(a.location) AGAINST(#{keyword} IN BOOLEAN MODE) * 2
+        ) DESC, a.created_at DESC
+        LIMIT #{page}, #{size}
+    </select>
+
+    <!-- 全文搜索活动（带用户信息） -->
+    <select id="searchActivitiesWithUserByKeyword" resultMap="ActivityWithUserMap">
+        SELECT 
+            a.id, a.user_id, a.title, a.description, a.date, a.day, a.time, a.location, a.tag,
+            a.participants, a.max_participants, a.likes_count, a.comments_count, a.images,
+            a.signup_deadline, a.image, a.status, a.created_at, a.updated_at,
+            u.username, u.nickname, u.avatar, u.school, u.mbti, u.location
+        FROM activities a
+        LEFT JOIN users u ON a.user_id = u.id
+        WHERE a.status = 'published'
+        AND (
+            MATCH(a.title) AGAINST(#{keyword} IN BOOLEAN MODE) * 3 +
+            MATCH(a.description) AGAINST(#{keyword} IN BOOLEAN MODE) * 1 +
+            MATCH(a.location) AGAINST(#{keyword} IN BOOLEAN MODE) * 2 > 0
+        )
+        ORDER BY (
+            MATCH(a.title) AGAINST(#{keyword} IN BOOLEAN MODE) * 3 +
+            MATCH(a.description) AGAINST(#{keyword} IN BOOLEAN MODE) * 1 +
+            MATCH(a.location) AGAINST(#{keyword} IN BOOLEAN MODE) * 2
+        ) DESC, a.created_at DESC
+        LIMIT #{page}, #{size}
+    </select>
+
+    <!-- 统计搜索结果数量 -->
+    <select id="countSearchActivitiesByKeyword" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM activities a
+        WHERE a.status = 'published'
+        AND (
+            MATCH(a.title) AGAINST(#{keyword} IN BOOLEAN MODE) * 3 +
+            MATCH(a.description) AGAINST(#{keyword} IN BOOLEAN MODE) * 1 +
+            MATCH(a.location) AGAINST(#{keyword} IN BOOLEAN MODE) * 2 > 0
+        )
+    </select>
+
+    <!-- 按地点搜索活动 -->
+    <select id="selectActivitiesByLocation" resultMap="ActivityWithUserMap">
+        SELECT 
+            a.id, a.user_id, a.title, a.description, a.date, a.day, a.time, a.location, a.tag,
+            a.participants, a.max_participants, a.likes_count, a.comments_count, a.images,
+            a.signup_deadline, a.image, a.status, a.created_at, a.updated_at,
+            u.username, u.nickname, u.avatar
+        FROM activities a
+        LEFT JOIN users u ON a.user_id = u.id
+        WHERE a.status = 'published'
+        AND a.location LIKE CONCAT('%', #{location}, '%')
+        ORDER BY a.date ASC, a.time ASC
+        LIMIT #{page}, #{size}
+    </select>
+
+    <!-- 按类型搜索活动 -->
+    <select id="selectActivitiesByType" resultMap="ActivityWithUserMap">
+        SELECT 
+            a.id, a.user_id, a.title, a.description, a.date, a.day, a.time, a.location, a.tag,
+            a.participants, a.max_participants, a.likes_count, a.comments_count, a.images,
+            a.signup_deadline, a.image, a.status, a.created_at, a.updated_at,
+            u.username, u.nickname, u.avatar
+        FROM activities a
+        LEFT JOIN users u ON a.user_id = u.id
+        WHERE a.status = 'published'
+        AND a.tag = #{activityType}
+        ORDER BY a.date ASC, a.time ASC
+        LIMIT #{page}, #{size}
+    </select>
+
+    <!-- 按状态搜索活动 -->
+    <select id="selectActivitiesByStatus" resultMap="ActivityWithUserMap">
+        SELECT 
+            a.id, a.user_id, a.title, a.description, a.date, a.day, a.time, a.location, a.tag,
+            a.participants, a.max_participants, a.likes_count, a.comments_count, a.images,
+            a.signup_deadline, a.image, a.status, a.created_at, a.updated_at,
+            u.username, u.nickname, u.avatar
+        FROM activities a
+        LEFT JOIN users u ON a.user_id = u.id
+        WHERE a.status = #{status}
+        ORDER BY a.created_at DESC
+        LIMIT #{page}, #{size}
+    </select>
+
+    <!-- 获取相关活动（基于类型或地点） -->
+    <select id="selectRelatedActivities" resultMap="ActivityWithUserMap">
+        SELECT 
+            a.id, a.user_id, a.title, a.description, a.date, a.day, a.time, a.location, a.tag,
+            a.participants, a.max_participants, a.likes_count, a.comments_count, a.images,
+            a.signup_deadline, a.image, a.status, a.created_at, a.updated_at,
+            u.username, u.nickname, u.avatar
+        FROM activities a
+        LEFT JOIN users u ON a.user_id = u.id
+        WHERE a.id != #{activityId}
+        AND a.status = 'published'
+        AND (
+            a.tag = (SELECT tag FROM activities WHERE id = #{activityId})
+            OR a.location LIKE (SELECT location FROM activities WHERE id = #{activityId})
+        )
+        ORDER BY a.date ASC, a.time ASC
+        <if test="limit != null and limit > 0">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- ==================== 场地关联相关查询 ==================== -->
+
+    <!-- 活动结果映射（包含场地和标签信息） -->
+    <resultMap id="ActivityWithFieldAndTagsMap" type="com.xystapp.entity.Activity" extends="ActivityWithUserMap">
+        <result column="field_id" property="fieldId"/>
+        <result column="field_name" property="fieldName"/>
+        <result column="field_tags" property="fieldTags"/>
+        <result column="field_tag_colors" property="fieldTagColors"/>
+    </resultMap>
+
+    <!-- 根据场地ID查询活动列表（分页） -->
+    <select id="selectActivitiesByFieldId" resultMap="ActivityWithUserMap">
+        SELECT 
+            a.id, a.user_id, a.title, a.description, a.date, a.day, a.time, a.location, a.tag,
+            a.participants, a.max_participants, a.likes_count, a.comments_count, a.images,
+            a.signup_deadline, a.image, a.status, a.created_at, a.updated_at,
+            u.username, u.nickname, u.avatar
+        FROM activities a
+        LEFT JOIN users u ON a.user_id = u.id
+        WHERE a.field_id = #{fieldId}
+        ORDER BY a.date ASC, a.time ASC, a.created_at DESC
+    </select>
+
+    <!-- 根据标签ID查询活动列表（通过场地关联，分页） -->
+    <select id="selectActivitiesByTagId" resultMap="ActivityWithUserMap">
+        SELECT 
+            a.id, a.user_id, a.title, a.description, a.date, a.day, a.time, a.location, a.tag,
+            a.participants, a.max_participants, a.likes_count, a.comments_count, a.images,
+            a.signup_deadline, a.image, a.status, a.created_at, a.updated_at,
+            u.username, u.nickname, u.avatar
+        FROM activities a
+        LEFT JOIN users u ON a.user_id = u.id
+        INNER JOIN fields f ON a.field_id = f.id
+        INNER JOIN field_tags ft ON f.id = ft.field_id
+        WHERE ft.tag_id = #{tagId}
+        ORDER BY a.date ASC, a.time ASC, a.created_at DESC
+    </select>
+
+    <!-- 查询活动详情（包含场地和标签信息） -->
+    <select id="selectActivityWithFieldAndTagsById" resultMap="ActivityWithFieldAndTagsMap">
+        SELECT 
+            a.id, a.user_id, a.title, a.description, a.date, a.day, a.time, a.location, a.tag,
+            a.participants, a.max_participants, a.likes_count, a.comments_count, a.images,
+            a.signup_deadline, a.image, a.status, a.created_at, a.updated_at,
+            u.username, u.nickname, u.avatar,
+            a.field_id,
+            f.name as field_name,
+            GROUP_CONCAT(t.name ORDER BY t.sort_order SEPARATOR ',') as field_tags,
+            GROUP_CONCAT(t.color ORDER BY t.sort_order SEPARATOR ',') as field_tag_colors
+        FROM activities a
+        LEFT JOIN users u ON a.user_id = u.id
+        LEFT JOIN fields f ON a.field_id = f.id
+        LEFT JOIN field_tags ft ON f.id = ft.field_id
+        LEFT JOIN tags t ON ft.tag_id = t.id AND t.is_active = 1
+        WHERE a.id = #{id}
+        GROUP BY a.id, a.user_id, a.title, a.description, a.date, a.day, a.time, a.location, a.tag,
+                 a.participants, a.max_participants, a.likes_count, a.comments_count, a.images,
+                 a.signup_deadline, a.image, a.status, a.created_at, a.updated_at,
+                 u.username, u.nickname, u.avatar,
+                 a.field_id, f.name
+    </select>
+
+    <!-- 根据场地ID查询活动列表（包含场地信息） -->
+    <select id="selectActivitiesWithFieldByFieldId" resultMap="ActivityWithFieldAndTagsMap">
+        SELECT 
+            a.id, a.user_id, a.title, a.description, a.date, a.day, a.time, a.location, a.tag,
+            a.participants, a.max_participants, a.likes_count, a.comments_count, a.images,
+            a.signup_deadline, a.image, a.status, a.created_at, a.updated_at,
+            u.username, u.nickname, u.avatar,
+            a.field_id,
+            f.name as field_name,
+            GROUP_CONCAT(t.name ORDER BY t.sort_order SEPARATOR ',') as field_tags,
+            GROUP_CONCAT(t.color ORDER BY t.sort_order SEPARATOR ',') as field_tag_colors
+        FROM activities a
+        LEFT JOIN users u ON a.user_id = u.id
+        LEFT JOIN fields f ON a.field_id = f.id
+        LEFT JOIN field_tags ft ON f.id = ft.field_id
+        LEFT JOIN tags t ON ft.tag_id = t.id AND t.is_active = 1
+        WHERE a.field_id = #{fieldId}
+        GROUP BY a.id, a.user_id, a.title, a.description, a.date, a.day, a.time, a.location, a.tag,
+                 a.participants, a.max_participants, a.likes_count, a.comments_count, a.images,
+                 a.signup_deadline, a.image, a.status, a.created_at, a.updated_at,
+                 u.username, u.nickname, u.avatar,
+                 a.field_id, f.name
+        ORDER BY a.date ASC, a.time ASC, a.created_at DESC
+        <if test="limit != null and limit > 0">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+</mapper>

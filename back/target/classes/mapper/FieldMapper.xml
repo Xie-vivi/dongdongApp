@@ -1,0 +1,630 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xystapp.mapper.FieldMapper">
+
+    <!-- 场地结果映射（包含用户信息） -->
+    <resultMap id="FieldWithUserInfoMap" type="com.xystapp.entity.Field">
+        <id column="id" property="id"/>
+        <result column="name" property="name"/>
+        <result column="description" property="description"/>
+        <result column="avatar" property="avatar"/>
+        <result column="creator_id" property="creatorId"/>
+        <result column="members_count" property="membersCount"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+        
+        <!-- 创建者信息 -->
+        <result column="creator_username" property="creatorUsername"/>
+        <result column="creator_nickname" property="creatorNickname"/>
+        <result column="creator_avatar" property="creatorAvatar"/>
+    </resultMap>
+
+    <!-- 获取场地详情（包含用户信息） -->
+    <select id="selectFieldWithUserInfo" resultMap="FieldWithUserInfoMap">
+        SELECT 
+            f.id, f.name, f.description, f.avatar, f.creator_id, f.members_count, f.created_at, f.updated_at,
+            u.username as creator_username,
+            u.nickname as creator_nickname,
+            u.avatar as creator_avatar
+        FROM fields f
+        INNER JOIN users u ON f.creator_id = u.id
+        WHERE f.id = #{fieldId}
+    </select>
+
+    <!-- 获取场地列表（包含用户信息） -->
+    <select id="selectFieldList" resultMap="FieldWithUserInfoMap">
+        SELECT 
+            f.id, f.name, f.description, f.avatar, f.creator_id, f.members_count, f.created_at, f.updated_at,
+            u.username as creator_username,
+            u.nickname as creator_nickname,
+            u.avatar as creator_avatar
+        FROM fields f
+        INNER JOIN users u ON f.creator_id = u.id
+        <if test="keyword != null and keyword != ''">
+            WHERE f.name LIKE CONCAT('%', #{keyword}, '%')
+               OR f.description LIKE CONCAT('%', #{keyword}, '%')
+        </if>
+        ORDER BY f.created_at DESC
+    </select>
+
+    <!-- 获取用户创建的场地列表 -->
+    <select id="selectUserCreatedFields" resultMap="FieldWithUserInfoMap">
+        SELECT 
+            f.id, f.name, f.description, f.avatar, f.creator_id, f.members_count, f.created_at, f.updated_at,
+            u.username as creator_username,
+            u.nickname as creator_nickname,
+            u.avatar as creator_avatar
+        FROM fields f
+        INNER JOIN users u ON f.creator_id = u.id
+        WHERE f.creator_id = #{userId}
+        ORDER BY f.created_at DESC
+    </select>
+
+    <!-- 获取用户加入的场地列表 -->
+    <select id="selectUserJoinedFields" resultMap="FieldWithUserInfoMap">
+        SELECT 
+            f.id, f.name, f.description, f.avatar, f.creator_id, f.members_count, f.created_at, f.updated_at,
+            u.username as creator_username,
+            u.nickname as creator_nickname,
+            u.avatar as creator_avatar,
+            fm.role as current_user_role
+        FROM fields f
+        INNER JOIN users u ON f.creator_id = u.id
+        INNER JOIN user_fields fm ON f.id = fm.field_id
+        WHERE fm.user_id = #{userId}
+        ORDER BY fm.joined_at DESC
+    </select>
+
+    <!-- 搜索场地 -->
+    <select id="searchFields" resultMap="FieldWithUserInfoMap">
+        SELECT 
+            f.id, f.name, f.description, f.avatar, f.creator_id, f.members_count, f.created_at, f.updated_at,
+            u.username as creator_username,
+            u.nickname as creator_nickname,
+            u.avatar as creator_avatar
+        FROM fields f
+        INNER JOIN users u ON f.creator_id = u.id
+        WHERE f.name LIKE CONCAT('%', #{keyword}, '%')
+           OR f.description LIKE CONCAT('%', #{keyword}, '%')
+        ORDER BY f.members_count DESC, f.created_at DESC
+    </select>
+
+    <!-- 获取推荐场地 -->
+    <select id="selectRecommendedFields" resultMap="FieldWithUserInfoMap">
+        SELECT 
+            f.id, f.name, f.description, f.avatar, f.creator_id, f.members_count, f.created_at, f.updated_at,
+            u.username as creator_username,
+            u.nickname as creator_nickname,
+            u.avatar as creator_avatar
+        FROM fields f
+        INNER JOIN users u ON f.creator_id = u.id
+        WHERE f.id NOT IN (
+            SELECT field_id FROM user_fields WHERE user_id = #{userId}
+        )
+        ORDER BY f.members_count DESC, f.created_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 获取热门场地 -->
+    <select id="selectPopularFields" resultMap="FieldWithUserInfoMap">
+        SELECT 
+            f.id, f.name, f.description, f.avatar, f.creator_id, f.members_count, f.created_at, f.updated_at,
+            u.username as creator_username,
+            u.nickname as creator_nickname,
+            u.avatar as creator_avatar
+        FROM fields f
+        INNER JOIN users u ON f.creator_id = u.id
+        ORDER BY f.members_count DESC, f.created_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 批量获取场地信息 -->
+    <select id="selectFieldsByIds" resultMap="FieldWithUserInfoMap">
+        SELECT 
+            f.id, f.name, f.description, f.avatar, f.creator_id, f.members_count, f.created_at, f.updated_at,
+            u.username as creator_username,
+            u.nickname as creator_nickname,
+            u.avatar as creator_avatar
+        FROM fields f
+        INNER JOIN users u ON f.creator_id = u.id
+        WHERE f.id IN
+        <foreach collection="fieldIds" item="fieldId" open="(" separator="," close=")">
+            #{fieldId}
+        </foreach>
+        ORDER BY f.created_at DESC
+    </select>
+
+    <!-- ==================== 统计相关 ==================== -->
+
+    <!-- 统计场地帖子数量 -->
+    <select id="countPostsByFieldId" resultType="long">
+        SELECT COUNT(1) 
+        FROM posts 
+        WHERE field_id = #{fieldId}
+    </select>
+
+    <!-- 统计场地活动数量 -->
+    <select id="countActivitiesByFieldId" resultType="long">
+        SELECT COUNT(1) 
+        FROM activities 
+        WHERE field_id = #{fieldId}
+    </select>
+
+    <!-- 统计用户创建的场地数量 -->
+    <select id="countUserCreatedFields" resultType="long">
+        SELECT COUNT(1) 
+        FROM fields 
+        WHERE creator_id = #{userId}
+    </select>
+
+    <!-- 统计用户创建场地的总成员数 -->
+    <select id="countTotalMembersInUserCreatedFields" resultType="long">
+        SELECT COALESCE(SUM(members_count), 0)
+        FROM fields 
+        WHERE creator_id = #{userId}
+    </select>
+
+    <!-- 统计场地今日帖子数量 -->
+    <select id="countTodayPostsByFieldId" resultType="long">
+        SELECT COUNT(1) 
+        FROM posts 
+        WHERE field_id = #{fieldId}
+        AND DATE(created_at) = CURDATE()
+    </select>
+
+    <!-- 统计场地今日活动数量 -->
+    <select id="countTodayActivitiesByFieldId" resultType="long">
+        SELECT COUNT(1) 
+        FROM activities 
+        WHERE field_id = #{fieldId}
+        AND DATE(created_at) = CURDATE()
+    </select>
+
+    <!-- ==================== 业务查询 ==================== -->
+
+    <!-- 获取场地内容统计 -->
+    <select id="selectFieldContentStats" resultType="com.xystapp.service.FieldService$FieldContentStats">
+        SELECT 
+            f.id as fieldId,
+            f.name as fieldName,
+            COALESCE(p.post_count, 0) as postsCount,
+            COALESCE(a.activity_count, 0) as activitiesCount,
+            GREATEST(COALESCE(p.last_post_at, '1970-01-01'), COALESCE(a.last_activity_at, '1970-01-01')) as lastActivityAt
+        FROM fields f
+        LEFT JOIN (
+            SELECT 
+                field_id,
+                COUNT(1) as post_count,
+                MAX(created_at) as last_post_at
+            FROM posts
+            WHERE field_id IN
+            <foreach collection="fieldIds" item="fieldId" open="(" separator="," close=")">
+                #{fieldId}
+            </foreach>
+            GROUP BY field_id
+        ) p ON f.id = p.field_id
+        LEFT JOIN (
+            SELECT 
+                field_id,
+                COUNT(1) as activity_count,
+                MAX(created_at) as last_activity_at
+            FROM activities
+            WHERE field_id IN
+            <foreach collection="fieldIds" item="fieldId" open="(" separator="," close=")">
+                #{fieldId}
+            </foreach>
+            GROUP BY field_id
+        ) a ON f.id = a.field_id
+        WHERE f.id IN
+        <foreach collection="fieldIds" item="fieldId" open="(" separator="," close=")">
+            #{fieldId}
+        </foreach>
+        ORDER BY lastActivityAt DESC
+    </select>
+
+    <!-- 获取用户相关的场地 -->
+    <select id="selectUserRelatedFields" resultMap="FieldWithUserInfoMap">
+        SELECT 
+            f.id, f.name, f.description, f.avatar, f.creator_id, f.members_count, f.created_at, f.updated_at,
+            u.username as creator_username,
+            u.nickname as creator_nickname,
+            u.avatar as creator_avatar
+        FROM fields f
+        INNER JOIN users u ON f.creator_id = u.id
+        WHERE f.creator_id = #{userId}
+           OR f.id IN (SELECT field_id FROM user_fields WHERE user_id = #{userId})
+        ORDER BY f.updated_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 获取最近活跃的场地 -->
+    <select id="selectRecentActiveFields" resultMap="FieldWithUserInfoMap">
+        SELECT 
+            f.id, f.name, f.description, f.avatar, f.creator_id, f.members_count, f.created_at, f.updated_at,
+            u.username as creator_username,
+            u.nickname as creator_nickname,
+            u.avatar as creator_avatar
+        FROM fields f
+        INNER JOIN users u ON f.creator_id = u.id
+        ORDER BY f.updated_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 获取场地创建者信息 -->
+    <select id="selectFieldWithCreatorInfo" resultMap="FieldWithUserInfoMap">
+        SELECT 
+            f.id, f.name, f.description, f.avatar, f.creator_id, f.members_count, f.created_at, f.updated_at,
+            u.username as creator_username,
+            u.nickname as creator_nickname,
+            u.avatar as creator_avatar
+        FROM fields f
+        INNER JOIN users u ON f.creator_id = u.id
+        WHERE f.id = #{fieldId}
+    </select>
+
+    <!-- 获取场地成员数量排名 -->
+    <select id="selectFieldsByMemberCount" resultMap="FieldWithUserInfoMap">
+        SELECT 
+            f.id, f.name, f.description, f.avatar, f.creator_id, f.members_count, f.created_at, f.updated_at,
+            u.username as creator_username,
+            u.nickname as creator_nickname,
+            u.avatar as creator_avatar
+        FROM fields f
+        INNER JOIN users u ON f.creator_id = u.id
+        ORDER BY f.members_count DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 获取场地帖子数量排名 -->
+    <select id="selectFieldsByPostCount" resultMap="FieldWithUserInfoMap">
+        SELECT 
+            f.id, f.name, f.description, f.avatar, f.creator_id, f.members_count, f.created_at, f.updated_at,
+            u.username as creator_username,
+            u.nickname as creator_nickname,
+            u.avatar as creator_avatar
+        FROM fields f
+        INNER JOIN users u ON f.creator_id = u.id
+        LEFT JOIN (
+            SELECT field_id, COUNT(1) as post_count
+            FROM posts
+            GROUP BY field_id
+        ) p ON f.id = p.field_id
+        ORDER BY COALESCE(p.post_count, 0) DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 获取场地活动数量排名 -->
+    <select id="selectFieldsByActivityCount" resultMap="FieldWithUserInfoMap">
+        SELECT 
+            f.id, f.name, f.description, f.avatar, f.creator_id, f.members_count, f.created_at, f.updated_at,
+            u.username as creator_username,
+            u.nickname as creator_nickname,
+            u.avatar as creator_avatar
+        FROM fields f
+        INNER JOIN users u ON f.creator_id = u.id
+        LEFT JOIN (
+            SELECT field_id, COUNT(1) as activity_count
+            FROM activities
+            GROUP BY field_id
+        ) a ON f.id = a.field_id
+        ORDER BY COALESCE(a.activity_count, 0) DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 检查场地名称是否存在 -->
+    <select id="fieldNameExists" resultType="boolean">
+        SELECT COUNT(1) > 0 
+        FROM fields 
+        WHERE name = #{name}
+        <if test="excludeId != null">
+            AND id != #{excludeId}
+        </if>
+    </select>
+
+    <!-- 获取场地创建时间 -->
+    <select id="selectCreatedAt" resultType="java.time.LocalDateTime">
+        SELECT created_at FROM fields WHERE id = #{fieldId}
+    </select>
+
+    <!-- 更新场地最后活动时间 -->
+    <update id="updateLastActivityTime">
+        UPDATE fields 
+        SET updated_at = NOW()
+        WHERE id = #{fieldId}
+    </update>
+
+    <!-- 原子更新场地成员数量 -->
+    <update id="updateMemberCountAtomic">
+        UPDATE fields 
+        SET members_count = (
+            SELECT COUNT(1) 
+            FROM user_fields 
+            WHERE field_id = #{fieldId}
+        ),
+        updated_at = NOW()
+        WHERE id = #{fieldId}
+    </update>
+
+    <!-- 获取场地详情（包含统计信息） -->
+    <select id="selectFieldWithStats" resultMap="FieldWithUserInfoMap">
+        SELECT 
+            f.id, f.name, f.description, f.avatar, f.creator_id, f.members_count, f.created_at, f.updated_at,
+            u.username as creator_username,
+            u.nickname as creator_nickname,
+            u.avatar as creator_avatar,
+            COALESCE(p.post_count, 0) as posts_count,
+            COALESCE(a.activity_count, 0) as activities_count
+        FROM fields f
+        INNER JOIN users u ON f.creator_id = u.id
+        LEFT JOIN (
+            SELECT field_id, COUNT(1) as post_count
+            FROM posts
+            WHERE field_id = #{fieldId}
+            GROUP BY field_id
+        ) p ON f.id = p.field_id
+        LEFT JOIN (
+            SELECT field_id, COUNT(1) as activity_count
+            FROM activities
+            WHERE field_id = #{fieldId}
+            GROUP BY field_id
+        ) a ON f.id = a.field_id
+        WHERE f.id = #{fieldId}
+    </select>
+
+    <!-- 获取场地列表（包含统计信息） -->
+    <select id="selectFieldListWithStats" resultMap="FieldWithUserInfoMap">
+        SELECT 
+            f.id, f.name, f.description, f.avatar, f.creator_id, f.members_count, f.created_at, f.updated_at,
+            u.username as creator_username,
+            u.nickname as creator_nickname,
+            u.avatar as creator_avatar,
+            COALESCE(p.post_count, 0) as posts_count,
+            COALESCE(a.activity_count, 0) as activities_count
+        FROM fields f
+        INNER JOIN users u ON f.creator_id = u.id
+        LEFT JOIN (
+            SELECT field_id, COUNT(1) as post_count
+            FROM posts
+            GROUP BY field_id
+        ) p ON f.id = p.field_id
+        LEFT JOIN (
+            SELECT field_id, COUNT(1) as activity_count
+            FROM activities
+            GROUP BY field_id
+        ) a ON f.id = a.field_id
+        <if test="keyword != null and keyword != ''">
+            WHERE f.name LIKE CONCAT('%', #{keyword}, '%')
+               OR f.description LIKE CONCAT('%', #{keyword}, '%')
+        </if>
+        ORDER BY f.created_at DESC
+    </select>
+
+    <!-- 根据成员数量获取场地列表 -->
+    <select id="selectFieldsByMemberCountRange" resultMap="FieldWithUserInfoMap">
+        SELECT 
+            f.id, f.name, f.description, f.avatar, f.creator_id, f.members_count, f.created_at, f.updated_at,
+            u.username as creator_username,
+            u.nickname as creator_nickname,
+            u.avatar as creator_avatar
+        FROM fields f
+        INNER JOIN users u ON f.creator_id = u.id
+        WHERE f.members_count >= #{minCount}
+        <if test="maxCount != null">
+            AND f.members_count &lt;= #{maxCount}
+        </if>
+        ORDER BY f.members_count DESC
+    </select>
+
+    <!-- 获取场地活跃度统计 -->
+    <select id="selectFieldActivityStats" resultType="com.xystapp.mapper.FieldMapper$FieldActivityStats">
+        SELECT 
+            f.id as fieldId,
+            f.name as fieldName,
+            COALESCE(activity_count, 0) as activityCount,
+            last_activity_at as lastActivityAt
+        FROM fields f
+        LEFT JOIN (
+            SELECT 
+                field_id,
+                COUNT(1) as activity_count,
+                MAX(created_at) as last_activity_at
+            FROM (
+                SELECT field_id, created_at FROM posts WHERE created_at >= DATE_SUB(NOW(), INTERVAL #{days} DAY)
+                UNION ALL
+                SELECT field_id, created_at FROM activities WHERE created_at >= DATE_SUB(NOW(), INTERVAL #{days} DAY)
+            ) activities
+            WHERE field_id IN
+            <foreach collection="fieldIds" item="fieldId" open="(" separator="," close=")">
+                #{fieldId}
+            </foreach>
+            GROUP BY field_id
+        ) stats ON f.id = stats.field_id
+        WHERE f.id IN
+        <foreach collection="fieldIds" item="fieldId" open="(" separator="," close=")">
+            #{fieldId}
+        </foreach>
+        ORDER BY activityCount DESC
+    </select>
+
+    <!-- ==================== 管理员功能相关方法 ==================== -->
+
+    <!-- 获取待审核场地列表 -->
+    <select id="selectPendingFields" resultMap="FieldWithUserInfoMap">
+        SELECT 
+            f.id, f.name, f.description, f.avatar, f.creator_id, f.member_count,
+            f.status, f.created_at, f.updated_at,
+            u.username, u.nickname, u.avatar as creator_avatar
+        FROM fields f
+        LEFT JOIN users u ON f.creator_id = u.id
+        WHERE f.status = 'inactive'
+        ORDER BY f.created_at ASC
+        <if test="page != null and size != null">
+            LIMIT #{size} OFFSET #{page}
+        </if>
+    </select>
+
+    <!-- 统计待审核场地数量 -->
+    <select id="countPendingFields" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM fields
+        WHERE status = 'inactive'
+    </select>
+
+    <!-- 按时间范围统计场地数量 -->
+    <select id="countFieldsByTimeRange" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM fields
+        WHERE 1=1
+        <choose>
+            <when test="timeRange == 'today'">
+                AND DATE(created_at) = CURDATE()
+            </when>
+            <when test="timeRange == 'yesterday'">
+                AND DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+            </when>
+            <when test="timeRange == 'week'">
+                AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+            </when>
+            <when test="timeRange == 'month'">
+                AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+            </when>
+            <when test="timeRange == 'year'">
+                AND created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+            </when>
+        </choose>
+    </select>
+
+    <!-- 获取热门场地 -->
+    <select id="selectHotFields" resultMap="FieldWithCreatorMap">
+        SELECT 
+            f.id, f.name, f.description, f.avatar, f.creator_id, f.member_count,
+            f.status, f.created_at, f.updated_at,
+            u.username, u.nickname, u.avatar as creator_avatar
+        FROM fields f
+        LEFT JOIN users u ON f.creator_id = u.id
+        WHERE f.status = 'active'
+        ORDER BY f.member_count DESC, f.created_at DESC
+        <if test="limit != null and limit > 0">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 全文搜索场地 -->
+    <select id="searchFieldsByKeyword" resultMap="FieldWithCreatorMap">
+        SELECT 
+            f.id, f.name, f.description, f.avatar, f.creator_id, f.member_count,
+            f.status, f.created_at, f.updated_at,
+            u.username, u.nickname, u.avatar as creator_avatar
+        FROM fields f
+        LEFT JOIN users u ON f.creator_id = u.id
+        WHERE f.status = 'active'
+        AND (
+            MATCH(f.name) AGAINST(#{keyword} IN BOOLEAN MODE) * 2 +
+            MATCH(f.description) AGAINST(#{keyword} IN BOOLEAN MODE) * 1 +
+            MATCH(f.address) AGAINST(#{keyword} IN BOOLEAN MODE) * 1 > 0
+        )
+        ORDER BY (
+            MATCH(f.name) AGAINST(#{keyword} IN BOOLEAN MODE) * 2 +
+            MATCH(f.description) AGAINST(#{keyword} IN BOOLEAN MODE) * 1 +
+            MATCH(f.address) AGAINST(#{keyword} IN BOOLEAN MODE) * 1
+        ) DESC, f.member_count DESC, f.created_at DESC
+        LIMIT #{page}, #{size}
+    </select>
+
+    <!-- 全文搜索场地（带用户信息） -->
+    <select id="searchFieldsWithUserByKeyword" resultMap="FieldWithCreatorMap">
+        SELECT 
+            f.id, f.name, f.description, f.avatar, f.creator_id, f.member_count,
+            f.status, f.created_at, f.updated_at,
+            u.username, u.nickname, u.avatar as creator_avatar,
+            u.school, u.mbti, u.location
+        FROM fields f
+        LEFT JOIN users u ON f.creator_id = u.id
+        WHERE f.status = 'active'
+        AND (
+            MATCH(f.name) AGAINST(#{keyword} IN BOOLEAN MODE) * 2 +
+            MATCH(f.description) AGAINST(#{keyword} IN BOOLEAN MODE) * 1 +
+            MATCH(f.address) AGAINST(#{keyword} IN BOOLEAN MODE) * 1 > 0
+        )
+        ORDER BY (
+            MATCH(f.name) AGAINST(#{keyword} IN BOOLEAN MODE) * 2 +
+            MATCH(f.description) AGAINST(#{keyword} IN BOOLEAN MODE) * 1 +
+            MATCH(f.address) AGAINST(#{keyword} IN BOOLEAN MODE) * 1
+        ) DESC, f.member_count DESC, f.created_at DESC
+        LIMIT #{page}, #{size}
+    </select>
+
+    <!-- 统计搜索结果数量 -->
+    <select id="countSearchFieldsByKeyword" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM fields f
+        WHERE f.status = 'active'
+        AND (
+            MATCH(f.name) AGAINST(#{keyword} IN BOOLEAN MODE) * 2 +
+            MATCH(f.description) AGAINST(#{keyword} IN BOOLEAN MODE) * 1 +
+            MATCH(f.address) AGAINST(#{keyword} IN BOOLEAN MODE) * 1 > 0
+        )
+    </select>
+
+    <!-- 按类型搜索场地 -->
+    <select id="selectFieldsByType" resultMap="FieldWithCreatorMap">
+        SELECT 
+            f.id, f.name, f.description, f.avatar, f.creator_id, f.member_count,
+            f.status, f.created_at, f.updated_at,
+            u.username, u.nickname, u.avatar as creator_avatar
+        FROM fields f
+        LEFT JOIN users u ON f.creator_id = u.id
+        WHERE f.status = 'active'
+        AND f.type = #{fieldType}
+        ORDER BY f.member_count DESC, f.created_at DESC
+        LIMIT #{page}, #{size}
+    </select>
+
+    <!-- 按地址搜索场地 -->
+    <select id="selectFieldsByAddress" resultMap="FieldWithCreatorMap">
+        SELECT 
+            f.id, f.name, f.description, f.avatar, f.creator_id, f.member_count,
+            f.status, f.created_at, f.updated_at,
+            u.username, u.nickname, u.avatar as creator_avatar
+        FROM fields f
+        LEFT JOIN users u ON f.creator_id = u.id
+        WHERE f.status = 'active'
+        AND f.address LIKE CONCAT('%', #{address}, '%')
+        ORDER BY f.member_count DESC, f.created_at DESC
+        LIMIT #{page}, #{size}
+    </select>
+
+    <!-- 按状态搜索场地 -->
+    <select id="selectFieldsByStatus" resultMap="FieldWithCreatorMap">
+        SELECT 
+            f.id, f.name, f.description, f.avatar, f.creator_id, f.member_count,
+            f.status, f.created_at, f.updated_at,
+            u.username, u.nickname, u.avatar as creator_avatar
+        FROM fields f
+        LEFT JOIN users u ON f.creator_id = u.id
+        WHERE f.status = #{status}
+        ORDER BY f.created_at DESC
+        LIMIT #{page}, #{size}
+    </select>
+
+    <!-- 获取相关场地（基于类型或地址） -->
+    <select id="selectRelatedFields" resultMap="FieldWithCreatorMap">
+        SELECT 
+            f.id, f.name, f.description, f.avatar, f.creator_id, f.member_count,
+            f.status, f.created_at, f.updated_at,
+            u.username, u.nickname, u.avatar as creator_avatar
+        FROM fields f
+        LEFT JOIN users u ON f.creator_id = u.id
+        WHERE f.id != #{fieldId}
+        AND f.status = 'active'
+        AND (
+            f.type = (SELECT type FROM fields WHERE id = #{fieldId})
+            OR f.address LIKE (SELECT address FROM fields WHERE id = #{fieldId})
+        )
+        ORDER BY f.member_count DESC, f.created_at DESC
+        <if test="limit != null and limit > 0">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+</mapper>

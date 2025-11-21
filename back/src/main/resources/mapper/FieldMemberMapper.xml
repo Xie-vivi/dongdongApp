@@ -1,0 +1,362 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xystapp.mapper.FieldMemberMapper">
+
+    <!-- 场地成员结果映射（包含用户信息） -->
+    <resultMap id="FieldMemberWithUserInfoMap" type="com.xystapp.entity.FieldMember">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="field_id" property="fieldId"/>
+        <result column="role" property="role"/>
+        <result column="joined_at" property="joinedAt"/>
+        
+        <!-- 用户信息 -->
+        <result column="username" property="username"/>
+        <result column="nickname" property="nickname"/>
+        <result column="avatar" property="avatar"/>
+        
+        <!-- 场地信息 -->
+        <result column="field_name" property="fieldName"/>
+        <result column="field_avatar" property="fieldAvatar"/>
+    </resultMap>
+
+    <!-- 根据场地ID和用户ID获取成员信息 -->
+    <select id="selectByFieldIdAndUserId" resultMap="FieldMemberWithUserInfoMap">
+        SELECT 
+            fm.id, fm.user_id, fm.field_id, fm.role, fm.joined_at,
+            u.username, u.nickname, u.avatar,
+            f.name as field_name, f.avatar as field_avatar
+        FROM user_fields fm
+        INNER JOIN users u ON fm.user_id = u.id
+        INNER JOIN fields f ON fm.field_id = f.id
+        WHERE fm.field_id = #{fieldId} AND fm.user_id = #{userId}
+    </select>
+
+    <!-- 获取场地成员列表（包含用户信息） -->
+    <select id="selectFieldMembers" resultMap="FieldMemberWithUserInfoMap">
+        SELECT 
+            fm.id, fm.user_id, fm.field_id, fm.role, fm.joined_at,
+            u.username, u.nickname, u.avatar,
+            f.name as field_name, f.avatar as field_avatar
+        FROM user_fields fm
+        INNER JOIN users u ON fm.user_id = u.id
+        INNER JOIN fields f ON fm.field_id = f.id
+        WHERE fm.field_id = #{fieldId}
+        <if test="role != null and role != ''">
+            AND fm.role = #{role}
+        </if>
+        ORDER BY 
+            CASE WHEN fm.role = 'admin' THEN 1 ELSE 2 END,
+            fm.joined_at ASC
+    </select>
+
+    <!-- 获取场地成员详情（包含用户信息） -->
+    <select id="selectFieldMemberWithUserInfo" resultMap="FieldMemberWithUserInfoMap">
+        SELECT 
+            fm.id, fm.user_id, fm.field_id, fm.role, fm.joined_at,
+            u.username, u.nickname, u.avatar,
+            f.name as field_name, f.avatar as field_avatar
+        FROM user_fields fm
+        INNER JOIN users u ON fm.user_id = u.id
+        INNER JOIN fields f ON fm.field_id = f.id
+        WHERE fm.field_id = #{fieldId} AND fm.user_id = #{userId}
+    </select>
+
+    <!-- 批量获取场地成员信息 -->
+    <select id="selectMembersByFieldIds" resultMap="FieldMemberWithUserInfoMap">
+        SELECT 
+            fm.id, fm.user_id, fm.field_id, fm.role, fm.joined_at,
+            u.username, u.nickname, u.avatar,
+            f.name as field_name, f.avatar as field_avatar
+        FROM user_fields fm
+        INNER JOIN users u ON fm.user_id = u.id
+        INNER JOIN fields f ON fm.field_id = f.id
+        WHERE fm.field_id IN
+        <foreach collection="fieldIds" item="fieldId" open="(" separator="," close=")">
+            #{fieldId}
+        </foreach>
+        <if test="userId != null">
+            AND fm.user_id = #{userId}
+        </if>
+        ORDER BY fm.field_id, fm.joined_at DESC
+    </select>
+
+    <!-- 获取用户加入的场地成员信息 -->
+    <select id="selectUserFieldMembers" resultMap="FieldMemberWithUserInfoMap">
+        SELECT 
+            fm.id, fm.user_id, fm.field_id, fm.role, fm.joined_at,
+            u.username, u.nickname, u.avatar,
+            f.name as field_name, f.avatar as field_avatar
+        FROM user_fields fm
+        INNER JOIN users u ON fm.user_id = u.id
+        INNER JOIN fields f ON fm.field_id = f.id
+        WHERE fm.user_id = #{userId}
+        ORDER BY fm.joined_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- ==================== 成员统计 ==================== -->
+
+    <!-- 统计场地成员数量 -->
+    <select id="countByFieldId" resultType="integer">
+        SELECT COUNT(1) 
+        FROM user_fields 
+        WHERE field_id = #{fieldId}
+    </select>
+
+    <!-- 统计场地指定角色的成员数量 -->
+    <select id="countByFieldIdAndRole" resultType="integer">
+        SELECT COUNT(1) 
+        FROM user_fields 
+        WHERE field_id = #{fieldId} AND role = #{role}
+    </select>
+
+    <!-- 统计用户加入的场地数量 -->
+    <select id="countUserJoinedFields" resultType="long">
+        SELECT COUNT(1) 
+        FROM user_fields 
+        WHERE user_id = #{userId}
+    </select>
+
+    <!-- 统计用户管理的场地数量 -->
+    <select id="countUserManagedFields" resultType="long">
+        SELECT COUNT(1) 
+        FROM user_fields 
+        WHERE user_id = #{userId} AND role = 'admin'
+    </select>
+
+    <!-- 统计场地今日新增成员数量 -->
+    <select id="countNewMembersByFieldId" resultType="long">
+        SELECT COUNT(1) 
+        FROM user_fields 
+        WHERE field_id = #{fieldId}
+        AND DATE(joined_at) = CURDATE()
+    </select>
+
+    <!-- 统计场地指定时间段内新增成员数量 -->
+    <select id="countNewMembersByFieldIdAndTime" resultType="long">
+        SELECT COUNT(1) 
+        FROM user_fields 
+        WHERE field_id = #{fieldId}
+        AND joined_at BETWEEN #{startTime} AND #{endTime}
+    </select>
+
+    <!-- ==================== 成员操作 ==================== -->
+
+    <!-- 根据场地ID删除所有成员 -->
+    <delete id="deleteByFieldId">
+        DELETE FROM user_fields WHERE field_id = #{fieldId}
+    </delete>
+
+    <!-- 根据场地ID和用户ID删除成员 -->
+    <delete id="deleteByFieldIdAndUserId">
+        DELETE FROM user_fields 
+        WHERE field_id = #{fieldId} AND user_id = #{userId}
+    </delete>
+
+    <!-- 批量删除场地成员 -->
+    <delete id="deleteMultipleMembers">
+        DELETE FROM user_fields 
+        WHERE field_id = #{fieldId} AND user_id IN
+        <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+            #{userId}
+        </foreach>
+    </delete>
+
+    <!-- 更新成员角色 -->
+    <update id="updateMemberRole">
+        UPDATE user_fields 
+        SET role = #{role}
+        WHERE field_id = #{fieldId} AND user_id = #{userId}
+    </update>
+
+    <!-- 批量更新成员角色 -->
+    <update id="updateMultipleMemberRoles">
+        UPDATE user_fields 
+        SET role = #{role}
+        WHERE field_id = #{fieldId} AND user_id IN
+        <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+            #{userId}
+        </foreach>
+    </update>
+
+    <!-- ==================== 业务查询 ==================== -->
+
+    <!-- 获取场地管理员列表 -->
+    <select id="selectFieldAdmins" resultMap="FieldMemberWithUserInfoMap">
+        SELECT 
+            fm.id, fm.user_id, fm.field_id, fm.role, fm.joined_at,
+            u.username, u.nickname, u.avatar,
+            f.name as field_name, f.avatar as field_avatar
+        FROM user_fields fm
+        INNER JOIN users u ON fm.user_id = u.id
+        INNER JOIN fields f ON fm.field_id = f.id
+        WHERE fm.field_id = #{fieldId} AND fm.role = 'admin'
+        ORDER BY fm.joined_at ASC
+    </select>
+
+    <!-- 获取场地普通成员列表 -->
+    <select id="selectFieldNormalMembers" resultMap="FieldMemberWithUserInfoMap">
+        SELECT 
+            fm.id, fm.user_id, fm.field_id, fm.role, fm.joined_at,
+            u.username, u.nickname, u.avatar,
+            f.name as field_name, f.avatar as field_avatar
+        FROM user_fields fm
+        INNER JOIN users u ON fm.user_id = u.id
+        INNER JOIN fields f ON fm.field_id = f.id
+        WHERE fm.field_id = #{fieldId} AND fm.role = 'member'
+        ORDER BY fm.joined_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 获取用户管理的场地成员信息 -->
+    <select id="selectUserManagedFieldMembers" resultMap="FieldMemberWithUserInfoMap">
+        SELECT 
+            fm.id, fm.user_id, fm.field_id, fm.role, fm.joined_at,
+            u.username, u.nickname, u.avatar,
+            f.name as field_name, f.avatar as field_avatar
+        FROM user_fields fm
+        INNER JOIN users u ON fm.user_id = u.id
+        INNER JOIN fields f ON fm.field_id = f.id
+        WHERE fm.user_id = #{userId} AND fm.role = 'admin'
+        ORDER BY fm.joined_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 获取最近加入的成员 -->
+    <select id="selectRecentMembers" resultMap="FieldMemberWithUserInfoMap">
+        SELECT 
+            fm.id, fm.user_id, fm.field_id, fm.role, fm.joined_at,
+            u.username, u.nickname, u.avatar,
+            f.name as field_name, f.avatar as field_avatar
+        FROM user_fields fm
+        INNER JOIN users u ON fm.user_id = u.id
+        INNER JOIN fields f ON fm.field_id = f.id
+        WHERE fm.field_id = #{fieldId}
+        ORDER BY fm.joined_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 获取最早加入的成员 -->
+    <select id="selectEarliestMembers" resultMap="FieldMemberWithUserInfoMap">
+        SELECT 
+            fm.id, fm.user_id, fm.field_id, fm.role, fm.joined_at,
+            u.username, u.nickname, u.avatar,
+            f.name as field_name, f.avatar as field_avatar
+        FROM user_fields fm
+        INNER JOIN users u ON fm.user_id = u.id
+        INNER JOIN fields f ON fm.field_id = f.id
+        WHERE fm.field_id = #{fieldId}
+        ORDER BY fm.joined_at ASC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 检查用户是否是场地成员 -->
+    <select id="isFieldMember" resultType="boolean">
+        SELECT COUNT(1) > 0 
+        FROM user_fields 
+        WHERE field_id = #{fieldId} AND user_id = #{userId}
+    </select>
+
+    <!-- 检查用户是否是场地管理员 -->
+    <select id="isFieldAdmin" resultType="boolean">
+        SELECT COUNT(1) > 0 
+        FROM user_fields 
+        WHERE field_id = #{fieldId} AND user_id = #{userId} AND role = 'admin'
+    </select>
+
+    <!-- 获取成员加入时间 -->
+    <select id="selectJoinedAt" resultType="java.time.LocalDateTime">
+        SELECT joined_at 
+        FROM user_fields 
+        WHERE field_id = #{fieldId} AND user_id = #{userId}
+    </select>
+
+    <!-- 获取场地成员加入时间统计 -->
+    <select id="selectMemberJoinStats" resultType="com.xystapp.mapper.FieldMemberMapper$MemberJoinStats">
+        SELECT 
+            DATE(joined_at) as date,
+            COUNT(1) as joinCount
+        FROM user_fields 
+        WHERE field_id = #{fieldId}
+        AND joined_at >= DATE_SUB(NOW(), INTERVAL #{days} DAY)
+        GROUP BY DATE(joined_at)
+        ORDER BY date DESC
+    </select>
+
+    <!-- ==================== 权限相关 ==================== -->
+
+    <!-- 获取用户在所有场地中的角色 -->
+    <select id="selectUserRolesInAllFields" resultMap="FieldMemberWithUserInfoMap">
+        SELECT 
+            fm.id, fm.user_id, fm.field_id, fm.role, fm.joined_at,
+            u.username, u.nickname, u.avatar,
+            f.name as field_name, f.avatar as field_avatar
+        FROM user_fields fm
+        INNER JOIN users u ON fm.user_id = u.id
+        INNER JOIN fields f ON fm.field_id = f.id
+        WHERE fm.user_id = #{userId}
+        ORDER BY fm.joined_at DESC
+    </select>
+
+    <!-- 获取场地中用户权限高于指定角色的成员列表 -->
+    <select id="selectMembersWithHigherRole" resultMap="FieldMemberWithUserInfoMap">
+        SELECT 
+            fm.id, fm.user_id, fm.field_id, fm.role, fm.joined_at,
+            u.username, u.nickname, u.avatar,
+            f.name as field_name, f.avatar as field_avatar
+        FROM user_fields fm
+        INNER JOIN users u ON fm.user_id = u.id
+        INNER JOIN fields f ON fm.field_id = f.id
+        WHERE fm.field_id = #{fieldId}
+        AND fm.role != #{excludeRole}
+        <if test="excludeRole == 'member'">
+            AND fm.role IN ('admin')
+        </if>
+        ORDER BY 
+            CASE WHEN fm.role = 'admin' THEN 1 ELSE 2 END,
+            fm.joined_at ASC
+    </select>
+
+    <!-- 检查用户在场地中是否有指定权限 -->
+    <select id="hasPermission" resultType="boolean">
+        SELECT COUNT(1) > 0 
+        FROM user_fields fm
+        WHERE fm.field_id = #{fieldId} 
+        AND fm.user_id = #{userId}
+        AND (
+            fm.role = 'admin'
+            <if test="permission == 'manage'">
+                OR fm.user_id = (SELECT creator_id FROM fields WHERE id = #{fieldId})
+            </if>
+        )
+    </select>
+
+    <!-- ==================== 数据维护 ==================== -->
+
+    <!-- 清理无效的成员记录（用户不存在） -->
+    <delete id="cleanupInvalidMembers">
+        DELETE fm FROM user_fields fm
+        LEFT JOIN users u ON fm.user_id = u.id
+        WHERE u.id IS NULL
+    </delete>
+
+    <!-- 更新成员最后活跃时间 -->
+    <update id="updateLastActiveTime">
+        UPDATE user_fields 
+        SET joined_at = NOW()
+        WHERE field_id = #{fieldId} AND user_id = #{userId}
+    </update>
+
+    <!-- 获取需要清理的成员数量 -->
+    <select id="countMembersToCleanup" resultType="long">
+        SELECT COUNT(1) 
+        FROM user_fields fm
+        LEFT JOIN users u ON fm.user_id = u.id
+        WHERE u.id IS NULL
+        <if test="days != null">
+            OR fm.joined_at &lt; DATE_SUB(NOW(), INTERVAL #{days} DAY)
+        </if>
+    </select>
+
+</mapper>

@@ -1,0 +1,302 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xystapp.mapper.NotificationMapper">
+
+    <!-- 通知结果映射（包含用户信息） -->
+    <resultMap id="NotificationWithUserInfoMap" type="com.xystapp.entity.Notification">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="type" property="type"/>
+        <result column="related_type" property="relatedType"/>
+        <result column="related_id" property="relatedId"/>
+        <result column="sender_id" property="senderId"/>
+        <result column="content" property="content"/>
+        <result column="is_read" property="isRead"/>
+        <result column="created_at" property="createdAt"/>
+        
+        <!-- 发送者信息 -->
+        <result column="sender_username" property="senderUsername"/>
+        <result column="sender_nickname" property="senderNickname"/>
+        <result column="sender_avatar" property="senderAvatar"/>
+        
+        <!-- 关联内容信息 -->
+        <result column="related_title" property="relatedTitle"/>
+        <result column="related_preview" property="relatedPreview"/>
+    </resultMap>
+
+    <!-- 获取通知详情（包含用户信息） -->
+    <select id="selectNotificationWithUserInfo" resultMap="NotificationWithUserInfoMap">
+        SELECT 
+            n.id, n.user_id, n.type, n.related_type, n.related_id, n.sender_id, n.content, n.is_read, n.created_at,
+            u.username as sender_username,
+            u.nickname as sender_nickname,
+            u.avatar as sender_avatar,
+            COALESCE(p.title, a.title, c.content) as related_title,
+            COALESCE(SUBSTRING(p.content, 1, 100), SUBSTRING(a.description, 1, 100), SUBSTRING(c.content, 1, 100)) as related_preview
+        FROM notifications n
+        INNER JOIN users u ON n.sender_id = u.id
+        LEFT JOIN posts p ON n.related_type = 'post' AND n.related_id = p.id
+        LEFT JOIN activities a ON n.related_type = 'activity' AND n.related_id = a.id
+        LEFT JOIN comments c ON n.related_type = 'comment' AND n.related_id = c.id
+        WHERE n.id = #{notificationId}
+    </select>
+
+    <!-- 获取用户通知列表（包含用户信息） -->
+    <select id="selectUserNotifications" resultMap="NotificationWithUserInfoMap">
+        SELECT 
+            n.id, n.user_id, n.type, n.related_type, n.related_id, n.sender_id, n.content, n.is_read, n.created_at,
+            u.username as sender_username,
+            u.nickname as sender_nickname,
+            u.avatar as sender_avatar,
+            COALESCE(p.title, a.title, c.content) as related_title,
+            COALESCE(SUBSTRING(p.content, 1, 100), SUBSTRING(a.description, 1, 100), SUBSTRING(c.content, 1, 100)) as related_preview
+        FROM notifications n
+        INNER JOIN users u ON n.sender_id = u.id
+        LEFT JOIN posts p ON n.related_type = 'post' AND n.related_id = p.id
+        LEFT JOIN activities a ON n.related_type = 'activity' AND n.related_id = a.id
+        LEFT JOIN comments c ON n.related_type = 'comment' AND n.related_id = c.id
+        WHERE n.user_id = #{userId}
+        ORDER BY n.created_at DESC
+    </select>
+
+    <!-- 获取未读通知列表 -->
+    <select id="selectUnreadNotifications" resultMap="NotificationWithUserInfoMap">
+        SELECT 
+            n.id, n.user_id, n.type, n.related_type, n.related_id, n.sender_id, n.content, n.is_read, n.created_at,
+            u.username as sender_username,
+            u.nickname as sender_nickname,
+            u.avatar as sender_avatar,
+            COALESCE(p.title, a.title, c.content) as related_title,
+            COALESCE(SUBSTRING(p.content, 1, 100), SUBSTRING(a.description, 1, 100), SUBSTRING(c.content, 1, 100)) as related_preview
+        FROM notifications n
+        INNER JOIN users u ON n.sender_id = u.id
+        LEFT JOIN posts p ON n.related_type = 'post' AND n.related_id = p.id
+        LEFT JOIN activities a ON n.related_type = 'activity' AND n.related_id = a.id
+        LEFT JOIN comments c ON n.related_type = 'comment' AND n.related_id = c.id
+        WHERE n.user_id = #{userId} AND n.is_read = 0
+        ORDER BY n.created_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 获取指定类型的通知 -->
+    <select id="selectNotificationsByType" resultMap="NotificationWithUserInfoMap">
+        SELECT 
+            n.id, n.user_id, n.type, n.related_type, n.related_id, n.sender_id, n.content, n.is_read, n.created_at,
+            u.username as sender_username,
+            u.nickname as sender_nickname,
+            u.avatar as sender_avatar,
+            COALESCE(p.title, a.title, c.content) as related_title,
+            COALESCE(SUBSTRING(p.content, 1, 100), SUBSTRING(a.description, 1, 100), SUBSTRING(c.content, 1, 100)) as related_preview
+        FROM notifications n
+        INNER JOIN users u ON n.sender_id = u.id
+        LEFT JOIN posts p ON n.related_type = 'post' AND n.related_id = p.id
+        LEFT JOIN activities a ON n.related_type = 'activity' AND n.related_id = a.id
+        LEFT JOIN comments c ON n.related_type = 'comment' AND n.related_id = c.id
+        WHERE n.user_id = #{userId} AND n.type = #{type}
+        ORDER BY n.created_at DESC
+    </select>
+
+    <!-- 批量获取通知信息 -->
+    <select id="selectNotificationsByIds" resultMap="NotificationWithUserInfoMap">
+        SELECT 
+            n.id, n.user_id, n.type, n.related_type, n.related_id, n.sender_id, n.content, n.is_read, n.created_at,
+            u.username as sender_username,
+            u.nickname as sender_nickname,
+            u.avatar as sender_avatar,
+            COALESCE(p.title, a.title, c.content) as related_title,
+            COALESCE(SUBSTRING(p.content, 1, 100), SUBSTRING(a.description, 1, 100), SUBSTRING(c.content, 1, 100)) as related_preview
+        FROM notifications n
+        INNER JOIN users u ON n.sender_id = u.id
+        LEFT JOIN posts p ON n.related_type = 'post' AND n.related_id = p.id
+        LEFT JOIN activities a ON n.related_type = 'activity' AND n.related_id = a.id
+        LEFT JOIN comments c ON n.related_type = 'comment' AND n.related_id = c.id
+        WHERE n.id IN
+        <foreach collection="notificationIds" item="notificationId" open="(" separator="," close=")">
+            #{notificationId}
+        </foreach>
+        AND n.user_id = #{userId}
+        ORDER BY n.created_at DESC
+    </select>
+
+    <!-- 标记通知为已读 -->
+    <update id="markAsRead">
+        UPDATE notifications 
+        SET is_read = 1
+        WHERE id = #{notificationId}
+    </update>
+
+    <!-- 批量标记通知为已读 -->
+    <update id="markMultipleAsRead">
+        UPDATE notifications 
+        SET is_read = 1
+        WHERE id IN
+        <foreach collection="notificationIds" item="notificationId" open="(" separator="," close=")">
+            #{notificationId}
+        </foreach>
+        AND user_id = #{userId}
+    </update>
+
+    <!-- 标记所有通知为已读 -->
+    <update id="markAllAsRead">
+        UPDATE notifications 
+        SET is_read = 1
+        WHERE user_id = #{userId} AND is_read = 0
+    </update>
+
+    <!-- 批量删除通知 -->
+    <delete id="deleteMultipleNotifications">
+        DELETE FROM notifications 
+        WHERE id IN
+        <foreach collection="notificationIds" item="notificationId" open="(" separator="," close=")">
+            #{notificationId}
+        </foreach>
+        AND user_id = #{userId}
+    </delete>
+
+    <!-- 删除用户所有通知 -->
+    <delete id="deleteAllByUserId">
+        DELETE FROM notifications WHERE user_id = #{userId}
+    </delete>
+
+    <!-- ==================== 统计相关 ==================== -->
+
+    <!-- 统计用户通知总数 -->
+    <select id="countByUserId" resultType="long">
+        SELECT COUNT(1) FROM notifications WHERE user_id = #{userId}
+    </select>
+
+    <!-- 统计用户未读通知数量 -->
+    <select id="selectUnreadCount" resultType="integer">
+        SELECT COUNT(1) FROM notifications WHERE user_id = #{userId} AND is_read = 0
+    </select>
+
+    <!-- 统计用户今日通知数量 -->
+    <select id="countTodayByUserId" resultType="long">
+        SELECT COUNT(1) 
+        FROM notifications 
+        WHERE user_id = #{userId} 
+        AND DATE(created_at) = CURDATE()
+    </select>
+
+    <!-- 统计用户指定类型的通知数量 -->
+    <select id="countByUserIdAndType" resultType="long">
+        SELECT COUNT(1) 
+        FROM notifications 
+        WHERE user_id = #{userId} AND type = #{type}
+    </select>
+
+    <!-- 统计用户未读的指定类型通知数量 -->
+    <select id="countUnreadByUserIdAndType" resultType="long">
+        SELECT COUNT(1) 
+        FROM notifications 
+        WHERE user_id = #{userId} AND type = #{type} AND is_read = 0
+    </select>
+
+    <!-- ==================== 业务查询 ==================== -->
+
+    <!-- 获取用户最近的通知 -->
+    <select id="selectRecentNotifications" resultMap="NotificationWithUserInfoMap">
+        SELECT 
+            n.id, n.user_id, n.type, n.related_type, n.related_id, n.sender_id, n.content, n.is_read, n.created_at,
+            u.username as sender_username,
+            u.nickname as sender_nickname,
+            u.avatar as sender_avatar,
+            COALESCE(p.title, a.title, c.content) as related_title,
+            COALESCE(SUBSTRING(p.content, 1, 100), SUBSTRING(a.description, 1, 100), SUBSTRING(c.content, 1, 100)) as related_preview
+        FROM notifications n
+        INNER JOIN users u ON n.sender_id = u.id
+        LEFT JOIN posts p ON n.related_type = 'post' AND n.related_id = p.id
+        LEFT JOIN activities a ON n.related_type = 'activity' AND n.related_id = a.id
+        LEFT JOIN comments c ON n.related_type = 'comment' AND n.related_id = c.id
+        WHERE n.user_id = #{userId}
+        ORDER BY n.created_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 获取指定时间范围内的通知 -->
+    <select id="selectNotificationsByTimeRange" resultMap="NotificationWithUserInfoMap">
+        SELECT 
+            n.id, n.user_id, n.type, n.related_type, n.related_id, n.sender_id, n.content, n.is_read, n.created_at,
+            u.username as sender_username,
+            u.nickname as sender_nickname,
+            u.avatar as sender_avatar,
+            COALESCE(p.title, a.title, c.content) as related_title,
+            COALESCE(SUBSTRING(p.content, 1, 100), SUBSTRING(a.description, 1, 100), SUBSTRING(c.content, 1, 100)) as related_preview
+        FROM notifications n
+        INNER JOIN users u ON n.sender_id = u.id
+        LEFT JOIN posts p ON n.related_type = 'post' AND n.related_id = p.id
+        LEFT JOIN activities a ON n.related_type = 'activity' AND n.related_id = a.id
+        LEFT JOIN comments c ON n.related_type = 'comment' AND n.related_id = c.id
+        WHERE n.user_id = #{userId}
+        AND n.created_at BETWEEN #{startTime} AND #{endTime}
+        ORDER BY n.created_at DESC
+    </select>
+
+    <!-- 获取用户发送的通知列表 -->
+    <select id="selectSentNotifications" resultMap="NotificationWithUserInfoMap">
+        SELECT 
+            n.id, n.user_id, n.type, n.related_type, n.related_id, n.sender_id, n.content, n.is_read, n.created_at,
+            u.username as sender_username,
+            u.nickname as sender_nickname,
+            u.avatar as sender_avatar,
+            COALESCE(p.title, a.title, c.content) as related_title,
+            COALESCE(SUBSTRING(p.content, 1, 100), SUBSTRING(a.description, 1, 100), SUBSTRING(c.content, 1, 100)) as related_preview
+        FROM notifications n
+        INNER JOIN users u ON n.sender_id = u.id
+        LEFT JOIN posts p ON n.related_type = 'post' AND n.related_id = p.id
+        LEFT JOIN activities a ON n.related_type = 'activity' AND n.related_id = a.id
+        LEFT JOIN comments c ON n.related_type = 'comment' AND n.related_id = c.id
+        WHERE n.sender_id = #{senderId}
+        ORDER BY n.created_at DESC
+    </select>
+
+    <!-- 获取关联内容的通知 -->
+    <select id="selectNotificationsByRelated" resultMap="NotificationWithUserInfoMap">
+        SELECT 
+            n.id, n.user_id, n.type, n.related_type, n.related_id, n.sender_id, n.content, n.is_read, n.created_at,
+            u.username as sender_username,
+            u.nickname as sender_nickname,
+            u.avatar as sender_avatar,
+            COALESCE(p.title, a.title, c.content) as related_title,
+            COALESCE(SUBSTRING(p.content, 1, 100), SUBSTRING(a.description, 1, 100), SUBSTRING(c.content, 1, 100)) as related_preview
+        FROM notifications n
+        INNER JOIN users u ON n.sender_id = u.id
+        LEFT JOIN posts p ON n.related_type = 'post' AND n.related_id = p.id
+        LEFT JOIN activities a ON n.related_type = 'activity' AND n.related_id = a.id
+        LEFT JOIN comments c ON n.related_type = 'comment' AND n.related_id = c.id
+        WHERE n.related_type = #{relatedType} AND n.related_id = #{relatedId}
+        ORDER BY n.created_at DESC
+    </select>
+
+    <!-- 检查通知是否存在 -->
+    <select id="notificationExists" resultType="boolean">
+        SELECT COUNT(1) > 0 FROM notifications WHERE id = #{notificationId}
+    </select>
+
+    <!-- 检查用户是否是通知接收者 -->
+    <select id="isNotificationRecipient" resultType="boolean">
+        SELECT COUNT(1) > 0 
+        FROM notifications 
+        WHERE id = #{notificationId} AND user_id = #{userId}
+    </select>
+
+    <!-- 获取通知创建时间 -->
+    <select id="selectCreatedAt" resultType="java.time.LocalDateTime">
+        SELECT created_at FROM notifications WHERE id = #{notificationId}
+    </select>
+
+    <!-- 删除过期的通知 -->
+    <delete id="deleteExpiredNotifications">
+        DELETE FROM notifications 
+        WHERE created_at &lt; DATE_SUB(NOW(), INTERVAL #{expireDays} DAY)
+    </delete>
+
+    <!-- 清理已读的旧通知 -->
+    <delete id="cleanupOldReadNotifications">
+        DELETE FROM notifications 
+        WHERE user_id = #{userId} 
+        AND is_read = 1 
+        AND created_at &lt; DATE_SUB(NOW(), INTERVAL #{keepDays} DAY)
+    </delete>
+
+</mapper>

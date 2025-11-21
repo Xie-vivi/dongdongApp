@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xystapp.mapper.PostLikeMapper">
+
+    <!-- 帖子点赞结果映射（包含用户信息） -->
+    <resultMap id="PostLikeWithUserInfoMap" type="com.xystapp.entity.PostLike">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="post_id" property="postId"/>
+        <result column="created_at" property="createdAt"/>
+        
+        <!-- 用户信息 -->
+        <result column="username" property="username"/>
+        <result column="nickname" property="nickname"/>
+        <result column="avatar" property="avatar"/>
+        
+        <!-- 帖子信息 -->
+        <result column="post_title" property="postTitle"/>
+        <result column="post_content" property="postContent"/>
+    </resultMap>
+
+    <!-- 获取帖子点赞列表（包含用户信息） -->
+    <select id="selectPostLikesWithUserInfo" resultMap="PostLikeWithUserInfoMap">
+        SELECT 
+            pl.id, pl.user_id, pl.post_id, pl.created_at,
+            u.username, u.nickname, u.avatar,
+            p.title as post_title,
+            LEFT(p.content, 100) as post_content
+        FROM post_likes pl
+        INNER JOIN users u ON pl.user_id = u.id
+        INNER JOIN posts p ON pl.post_id = p.id
+        WHERE pl.post_id = #{postId}
+        ORDER BY pl.created_at DESC
+    </select>
+
+    <!-- 获取用户点赞的帖子列表（包含帖子信息） -->
+    <select id="selectUserLikedPostsWithInfo" resultMap="PostLikeWithUserInfoMap">
+        SELECT 
+            pl.id, pl.user_id, pl.post_id, pl.created_at,
+            u.username, u.nickname, u.avatar,
+            p.title as post_title,
+            LEFT(p.content, 100) as post_content
+        FROM post_likes pl
+        INNER JOIN users u ON pl.user_id = u.id
+        INNER JOIN posts p ON pl.post_id = p.id
+        WHERE pl.user_id = #{userId}
+        ORDER BY pl.created_at DESC
+    </select>
+
+    <!-- 统计用户点赞的帖子数量 -->
+    <select id="countUserPostLikes" resultType="long">
+        SELECT COUNT(1)
+        FROM post_likes
+        WHERE user_id = #{userId}
+    </select>
+
+    <!-- 获取用户点赞的帖子ID列表 -->
+    <select id="selectLikedPostIds" resultType="long">
+        SELECT post_id
+        FROM post_likes
+        WHERE user_id = #{userId}
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 批量检查帖子点赞状态 -->
+    <select id="selectLikedPostIdsByUser" resultType="long">
+        SELECT post_id
+        FROM post_likes
+        WHERE user_id = #{userId}
+        AND post_id IN
+        <foreach collection="postIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+</mapper>

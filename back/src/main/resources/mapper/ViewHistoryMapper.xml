@@ -1,0 +1,1081 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xystapp.mapper.ViewHistoryMapper">
+
+    <!-- 浏览记录结果映射（包含用户和内容信息） -->
+    <resultMap id="ViewHistoryWithUserInfoMap" type="com.xystapp.entity.ViewHistory">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="item_type" property="itemType"/>
+        <result column="item_id" property="itemId"/>
+        <result column="created_at" property="createdAt"/>
+        
+        <!-- 用户信息 -->
+        <result column="username" property="username"/>
+        <result column="nickname" property="nickname"/>
+        <result column="avatar" property="avatar"/>
+        
+        <!-- 内容信息 -->
+        <result column="item_title" property="itemTitle"/>
+        <result column="item_description" property="itemDescription"/>
+        <result column="item_image" property="itemImage"/>
+        <result column="item_author_id" property="itemAuthorId"/>
+        <result column="item_author_username" property="itemAuthorUsername"/>
+        <result column="item_author_nickname" property="itemAuthorNickname"/>
+        <result column="item_status" property="itemStatus"/>
+        <result column="item_created_at" property="itemCreatedAt"/>
+        <result column="item_updated_at" property="itemUpdatedAt"/>
+        <result column="view_count" property="viewCount"/>
+    </resultMap>
+
+    <!-- 根据用户和内容获取浏览记录 -->
+    <select id="selectByUserAndItem" resultMap="ViewHistoryWithUserInfoMap">
+        SELECT 
+            h.id, h.user_id, h.item_type, h.item_id, h.created_at,
+            u.username, u.nickname, u.avatar
+        FROM view_history h
+        INNER JOIN users u ON h.user_id = u.id
+        WHERE h.user_id = #{userId} AND h.item_type = #{itemType} AND h.item_id = #{itemId}
+        ORDER BY h.created_at DESC
+        LIMIT 1
+    </select>
+
+    <!-- 获取浏览记录详情（包含用户和内容信息） -->
+    <select id="selectViewHistoryDetail" resultMap="ViewHistoryWithUserInfoMap">
+        SELECT 
+            h.id, h.user_id, h.item_type, h.item_id, h.created_at,
+            u.username, u.nickname, u.avatar,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.title
+                WHEN h.item_type = 'activity' THEN a.title
+                ELSE '未知内容'
+            END as item_title,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.subtitle
+                WHEN h.item_type = 'activity' THEN a.description
+                ELSE ''
+            END as item_description,
+            CASE 
+                WHEN h.item_type = 'post' THEN JSON_UNQUOTE(JSON_EXTRACT(p.images, '$[0]'))
+                WHEN h.item_type = 'activity' THEN a.image
+                ELSE ''
+            END as item_image,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.user_id
+                WHEN h.item_type = 'activity' THEN a.user_id
+                ELSE NULL
+            END as item_author_id,
+            CASE 
+                WHEN h.item_type = 'post' THEN pu.username
+                WHEN h.item_type = 'activity' THEN au.username
+                ELSE ''
+            END as item_author_username,
+            CASE 
+                WHEN h.item_type = 'post' THEN pu.nickname
+                WHEN h.item_type = 'activity' THEN au.nickname
+                ELSE ''
+            END as item_author_nickname,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.status
+                WHEN h.item_type = 'activity' THEN a.status
+                ELSE ''
+            END as item_status,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.created_at
+                WHEN h.item_type = 'activity' THEN a.created_at
+                ELSE NULL
+            END as item_created_at,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.updated_at
+                WHEN h.item_type = 'activity' THEN a.updated_at
+                ELSE NULL
+            END as item_updated_at,
+            CASE 
+                WHEN h.item_type = 'post' THEN (SELECT COUNT(1) FROM view_history WHERE item_type = 'post' AND item_id = h.item_id)
+                WHEN h.item_type = 'activity' THEN (SELECT COUNT(1) FROM view_history WHERE item_type = 'activity' AND item_id = h.item_id)
+                ELSE 0
+            END as view_count
+        FROM view_history h
+        INNER JOIN users u ON h.user_id = u.id
+        LEFT JOIN posts p ON h.item_type = 'post' AND h.item_id = p.id
+        LEFT JOIN activities a ON h.item_type = 'activity' AND h.item_id = a.id
+        LEFT JOIN users pu ON p.user_id = pu.id
+        LEFT JOIN users au ON a.user_id = au.id
+        WHERE h.id = #{historyId}
+    </select>
+
+    <!-- 获取用户浏览记录列表（包含内容信息） -->
+    <select id="selectUserViewHistory" resultMap="ViewHistoryWithUserInfoMap">
+        SELECT 
+            h.id, h.user_id, h.item_type, h.item_id, h.created_at,
+            u.username, u.nickname, u.avatar,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.title
+                WHEN h.item_type = 'activity' THEN a.title
+                ELSE '未知内容'
+            END as item_title,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.subtitle
+                WHEN h.item_type = 'activity' THEN a.description
+                ELSE ''
+            END as item_description,
+            CASE 
+                WHEN h.item_type = 'post' THEN JSON_UNQUOTE(JSON_EXTRACT(p.images, '$[0]'))
+                WHEN h.item_type = 'activity' THEN a.image
+                ELSE ''
+            END as item_image,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.user_id
+                WHEN h.item_type = 'activity' THEN a.user_id
+                ELSE NULL
+            END as item_author_id,
+            CASE 
+                WHEN h.item_type = 'post' THEN pu.username
+                WHEN h.item_type = 'activity' THEN au.username
+                ELSE ''
+            END as item_author_username,
+            CASE 
+                WHEN h.item_type = 'post' THEN pu.nickname
+                WHEN h.item_type = 'activity' THEN au.nickname
+                ELSE ''
+            END as item_author_nickname,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.status
+                WHEN h.item_type = 'activity' THEN a.status
+                ELSE ''
+            END as item_status,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.created_at
+                WHEN h.item_type = 'activity' THEN a.created_at
+                ELSE NULL
+            END as item_created_at,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.updated_at
+                WHEN h.item_type = 'activity' THEN a.updated_at
+                ELSE NULL
+            END as item_updated_at,
+            CASE 
+                WHEN h.item_type = 'post' THEN (SELECT COUNT(1) FROM view_history WHERE item_type = 'post' AND item_id = h.item_id)
+                WHEN h.item_type = 'activity' THEN (SELECT COUNT(1) FROM view_history WHERE item_type = 'activity' AND item_id = h.item_id)
+                ELSE 0
+            END as view_count
+        FROM view_history h
+        INNER JOIN users u ON h.user_id = u.id
+        LEFT JOIN posts p ON h.item_type = 'post' AND h.item_id = p.id
+        LEFT JOIN activities a ON h.item_type = 'activity' AND h.item_id = a.id
+        LEFT JOIN users pu ON p.user_id = pu.id
+        LEFT JOIN users au ON a.user_id = au.id
+        WHERE h.user_id = #{userId}
+        <if test="itemType != null and itemType != ''">
+            AND h.item_type = #{itemType}
+        </if>
+        <choose>
+            <when test="sortBy == 'time_asc'">
+                ORDER BY h.created_at ASC
+            </when>
+            <when test="sortBy == 'title_asc'">
+                ORDER BY item_title ASC
+            </when>
+            <when test="sortBy == 'title_desc'">
+                ORDER BY item_title DESC
+            </when>
+            <otherwise>
+                ORDER BY h.created_at DESC
+            </otherwise>
+        </choose>
+    </select>
+
+    <!-- 获取用户指定类型的浏览记录 -->
+    <select id="selectUserViewHistoryByType" resultMap="ViewHistoryWithUserInfoMap">
+        SELECT 
+            h.id, h.user_id, h.item_type, h.item_id, h.created_at,
+            u.username, u.nickname, u.avatar,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.title
+                WHEN h.item_type = 'activity' THEN a.title
+                ELSE '未知内容'
+            END as item_title,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.subtitle
+                WHEN h.item_type = 'activity' THEN a.description
+                ELSE ''
+            END as item_description,
+            CASE 
+                WHEN h.item_type = 'post' THEN JSON_UNQUOTE(JSON_EXTRACT(p.images, '$[0]'))
+                WHEN h.item_type = 'activity' THEN a.image
+                ELSE ''
+            END as item_image,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.user_id
+                WHEN h.item_type = 'activity' THEN a.user_id
+                ELSE NULL
+            END as item_author_id,
+            CASE 
+                WHEN h.item_type = 'post' THEN pu.username
+                WHEN h.item_type = 'activity' THEN au.username
+                ELSE ''
+            END as item_author_username,
+            CASE 
+                WHEN h.item_type = 'post' THEN pu.nickname
+                WHEN h.item_type = 'activity' THEN au.nickname
+                ELSE ''
+            END as item_author_nickname,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.status
+                WHEN h.item_type = 'activity' THEN a.status
+                ELSE ''
+            END as item_status,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.created_at
+                WHEN h.item_type = 'activity' THEN a.created_at
+                ELSE NULL
+            END as item_created_at,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.updated_at
+                WHEN h.item_type = 'activity' THEN a.updated_at
+                ELSE NULL
+            END as item_updated_at,
+            CASE 
+                WHEN h.item_type = 'post' THEN (SELECT COUNT(1) FROM view_history WHERE item_type = 'post' AND item_id = h.item_id)
+                WHEN h.item_type = 'activity' THEN (SELECT COUNT(1) FROM view_history WHERE item_type = 'activity' AND item_id = h.item_id)
+                ELSE 0
+            END as view_count
+        FROM view_history h
+        INNER JOIN users u ON h.user_id = u.id
+        LEFT JOIN posts p ON h.item_type = 'post' AND h.item_id = p.id
+        LEFT JOIN activities a ON h.item_type = 'activity' AND h.item_id = a.id
+        LEFT JOIN users pu ON p.user_id = pu.id
+        LEFT JOIN users au ON a.user_id = au.id
+        WHERE h.user_id = #{userId} AND h.item_type = #{itemType}
+        <choose>
+            <when test="sortBy == 'time_asc'">
+                ORDER BY h.created_at ASC
+            </when>
+            <when test="sortBy == 'title_asc'">
+                ORDER BY item_title ASC
+            </when>
+            <when test="sortBy == 'title_desc'">
+                ORDER BY item_title DESC
+            </when>
+            <otherwise>
+                ORDER BY h.created_at DESC
+            </otherwise>
+        </choose>
+    </select>
+
+    <!-- 获取用户指定时间范围的浏览记录 -->
+    <select id="selectUserViewHistoryByTimeRange" resultMap="ViewHistoryWithUserInfoMap">
+        SELECT 
+            h.id, h.user_id, h.item_type, h.item_id, h.created_at,
+            u.username, u.nickname, u.avatar,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.title
+                WHEN h.item_type = 'activity' THEN a.title
+                ELSE '未知内容'
+            END as item_title,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.subtitle
+                WHEN h.item_type = 'activity' THEN a.description
+                ELSE ''
+            END as item_description,
+            CASE 
+                WHEN h.item_type = 'post' THEN JSON_UNQUOTE(JSON_EXTRACT(p.images, '$[0]'))
+                WHEN h.item_type = 'activity' THEN a.image
+                ELSE ''
+            END as item_image,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.user_id
+                WHEN h.item_type = 'activity' THEN a.user_id
+                ELSE NULL
+            END as item_author_id,
+            CASE 
+                WHEN h.item_type = 'post' THEN pu.username
+                WHEN h.item_type = 'activity' THEN au.username
+                ELSE ''
+            END as item_author_username,
+            CASE 
+                WHEN h.item_type = 'post' THEN pu.nickname
+                WHEN h.item_type = 'activity' THEN au.nickname
+                ELSE ''
+            END as item_author_nickname,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.status
+                WHEN h.item_type = 'activity' THEN a.status
+                ELSE ''
+            END as item_status,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.created_at
+                WHEN h.item_type = 'activity' THEN a.created_at
+                ELSE NULL
+            END as item_created_at,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.updated_at
+                WHEN h.item_type = 'activity' THEN a.updated_at
+                ELSE NULL
+            END as item_updated_at,
+            CASE 
+                WHEN h.item_type = 'post' THEN (SELECT COUNT(1) FROM view_history WHERE item_type = 'post' AND item_id = h.item_id)
+                WHEN h.item_type = 'activity' THEN (SELECT COUNT(1) FROM view_history WHERE item_type = 'activity' AND item_id = h.item_id)
+                ELSE 0
+            END as view_count
+        FROM view_history h
+        INNER JOIN users u ON h.user_id = u.id
+        LEFT JOIN posts p ON h.item_type = 'post' AND h.item_id = p.id
+        LEFT JOIN activities a ON h.item_type = 'activity' AND h.item_id = a.id
+        LEFT JOIN users pu ON p.user_id = pu.id
+        LEFT JOIN users au ON a.user_id = au.id
+        WHERE h.user_id = #{userId}
+        <choose>
+            <when test="timeRange == 'today'">
+                AND DATE(h.created_at) = CURDATE()
+            </when>
+            <when test="timeRange == 'yesterday'">
+                AND DATE(h.created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+            </when>
+            <when test="timeRange == 'week'">
+                AND h.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+            </when>
+            <when test="timeRange == 'month'">
+                AND h.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+            </when>
+            <when test="timeRange == 'year'">
+                AND h.created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+            </when>
+        </choose>
+        ORDER BY h.created_at DESC
+    </select>
+
+    <!-- 获取用户最近浏览记录 -->
+    <select id="selectRecentViewHistory" resultMap="ViewHistoryWithUserInfoMap">
+        SELECT 
+            h.id, h.user_id, h.item_type, h.item_id, h.created_at,
+            u.username, u.nickname, u.avatar,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.title
+                WHEN h.item_type = 'activity' THEN a.title
+                ELSE '未知内容'
+            END as item_title,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.subtitle
+                WHEN h.item_type = 'activity' THEN a.description
+                ELSE ''
+            END as item_description,
+            CASE 
+                WHEN h.item_type = 'post' THEN JSON_UNQUOTE(JSON_EXTRACT(p.images, '$[0]'))
+                WHEN h.item_type = 'activity' THEN a.image
+                ELSE ''
+            END as item_image,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.user_id
+                WHEN h.item_type = 'activity' THEN a.user_id
+                ELSE NULL
+            END as item_author_id,
+            CASE 
+                WHEN h.item_type = 'post' THEN pu.username
+                WHEN h.item_type = 'activity' THEN au.username
+                ELSE ''
+            END as item_author_username,
+            CASE 
+                WHEN h.item_type = 'post' THEN pu.nickname
+                WHEN h.item_type = 'activity' THEN au.nickname
+                ELSE ''
+            END as item_author_nickname,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.status
+                WHEN h.item_type = 'activity' THEN a.status
+                ELSE ''
+            END as item_status,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.created_at
+                WHEN h.item_type = 'activity' THEN a.created_at
+                ELSE NULL
+            END as item_created_at,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.updated_at
+                WHEN h.item_type = 'activity' THEN a.updated_at
+                ELSE NULL
+            END as item_updated_at,
+            CASE 
+                WHEN h.item_type = 'post' THEN (SELECT COUNT(1) FROM view_history WHERE item_type = 'post' AND item_id = h.item_id)
+                WHEN h.item_type = 'activity' THEN (SELECT COUNT(1) FROM view_history WHERE item_type = 'activity' AND item_id = h.item_id)
+                ELSE 0
+            END as view_count
+        FROM view_history h
+        INNER JOIN users u ON h.user_id = u.id
+        LEFT JOIN posts p ON h.item_type = 'post' AND h.item_id = p.id
+        LEFT JOIN activities a ON h.item_type = 'activity' AND h.item_id = a.id
+        LEFT JOIN users pu ON p.user_id = pu.id
+        LEFT JOIN users au ON a.user_id = au.id
+        WHERE h.user_id = #{userId}
+        ORDER BY h.created_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- ==================== 统计相关 ==================== -->
+
+    <!-- 统计用户浏览数量 -->
+    <select id="countUserViews" resultType="integer">
+        SELECT COUNT(1) 
+        FROM view_history 
+        WHERE user_id = #{userId}
+        <if test="itemType != null and itemType != ''">
+            AND item_type = #{itemType}
+        </if>
+    </select>
+
+    <!-- 统计用户指定时间范围的浏览数量 -->
+    <select id="countUserViewsByTimeRange" resultType="integer">
+        SELECT COUNT(1) 
+        FROM view_history 
+        WHERE user_id = #{userId}
+        <choose>
+            <when test="timeRange == 'today'">
+                AND DATE(created_at) = CURDATE()
+            </when>
+            <when test="timeRange == 'yesterday'">
+                AND DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+            </when>
+            <when test="timeRange == 'week'">
+                AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+            </when>
+            <when test="timeRange == 'month'">
+                AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+            </when>
+            <when test="timeRange == 'year'">
+                AND created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+            </when>
+        </choose>
+    </select>
+
+    <!-- 统计内容浏览数量 -->
+    <select id="countItemViews" resultType="integer">
+        SELECT COUNT(1) 
+        FROM view_history 
+        WHERE item_type = #{itemType} AND item_id = #{itemId}
+    </select>
+
+    <!-- 统计内容指定时间范围的浏览数量 -->
+    <select id="countItemViewsByTimeRange" resultType="integer">
+        SELECT COUNT(1) 
+        FROM view_history 
+        WHERE item_type = #{itemType} AND item_id = #{itemId}
+        <choose>
+            <when test="timeRange == 'today'">
+                AND DATE(created_at) = CURDATE()
+            </when>
+            <when test="timeRange == 'yesterday'">
+                AND DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+            </when>
+            <when test="timeRange == 'week'">
+                AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+            </when>
+            <when test="timeRange == 'month'">
+                AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+            </when>
+            <when test="timeRange == 'year'">
+                AND created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+            </when>
+        </choose>
+    </select>
+
+    <!-- 统计用户浏览的唯一内容数量 -->
+    <select id="countUserUniqueItems" resultType="integer">
+        SELECT COUNT(DISTINCT CONCAT(item_type, '_', item_id)) 
+        FROM view_history 
+        WHERE user_id = #{userId}
+    </select>
+
+    <!-- 统计内容的唯一浏览者数量 -->
+    <select id="countItemUniqueViewers" resultType="integer">
+        SELECT COUNT(DISTINCT user_id) 
+        FROM view_history 
+        WHERE item_type = #{itemType} AND item_id = #{itemId}
+    </select>
+
+    <!-- ==================== 热门内容相关 ==================== -->
+
+    <!-- 获取热门内容统计 -->
+    <select id="selectHotItems" resultType="com.xystapp.service.ViewHistoryService$HotItemStats">
+        SELECT 
+            h.item_type as itemType,
+            h.item_id as itemId,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.title
+                WHEN h.item_type = 'activity' THEN a.title
+                ELSE '未知内容'
+            END as itemTitle,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.subtitle
+                WHEN h.item_type = 'activity' THEN a.description
+                ELSE ''
+            END as itemDescription,
+            CASE 
+                WHEN h.item_type = 'post' THEN JSON_UNQUOTE(JSON_EXTRACT(p.images, '$[0]'))
+                WHEN h.item_type = 'activity' THEN a.image
+                ELSE ''
+            END as itemImage,
+            COUNT(1) as viewCount,
+            COUNT(DISTINCT h.user_id) as uniqueViewers,
+            MAX(h.created_at) as lastViewTime
+        FROM view_history h
+        LEFT JOIN posts p ON h.item_type = 'post' AND h.item_id = p.id
+        LEFT JOIN activities a ON h.item_type = 'activity' AND h.item_id = a.id
+        WHERE h.item_type = #{itemType}
+        GROUP BY h.item_type, h.item_id
+        ORDER BY viewCount DESC, lastViewTime DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 获取浏览趋势统计 -->
+    <select id="selectUserViewTrend" resultType="com.xystapp.service.ViewHistoryService$ViewTrendStats">
+        SELECT 
+            DATE(created_at) as date,
+            COUNT(1) as viewCount,
+            COUNT(DISTINCT item_id) as uniqueUsers
+        FROM view_history 
+        WHERE user_id = #{userId}
+        <choose>
+            <when test="timeRange == 'today'">
+                AND DATE(created_at) = CURDATE()
+            </when>
+            <when test="timeRange == 'week'">
+                AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+            </when>
+            <when test="timeRange == 'month'">
+                AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+            </when>
+            <when test="timeRange == 'year'">
+                AND created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+            </when>
+        </choose>
+        GROUP BY DATE(created_at)
+        ORDER BY date DESC
+    </select>
+
+    <!-- 获取内容浏览趋势统计 -->
+    <select id="selectItemViewTrend" resultType="com.xystapp.service.ViewHistoryService$ViewTrendStats">
+        SELECT 
+            DATE(created_at) as date,
+            COUNT(1) as viewCount,
+            COUNT(DISTINCT user_id) as uniqueUsers
+        FROM view_history 
+        WHERE item_type = #{itemType} AND item_id = #{itemId}
+        <choose>
+            <when test="timeRange == 'today'">
+                AND DATE(created_at) = CURDATE()
+            </when>
+            <when test="timeRange == 'week'">
+                AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+            </when>
+            <when test="timeRange == 'month'">
+                AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+            </when>
+            <when test="timeRange == 'year'">
+                AND created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+            </when>
+        </choose>
+        GROUP BY DATE(created_at)
+        ORDER BY date DESC
+    </select>
+
+    <!-- ==================== 推荐相关 ==================== -->
+
+    <!-- 获取推荐内容（基于浏览历史） -->
+    <select id="selectRecommendItems" resultType="com.xystapp.service.ViewHistoryService$RecommendItem">
+        SELECT 
+            p.item_type as itemType,
+            p.item_id as itemId,
+            CASE 
+                WHEN p.item_type = 'post' THEN post.title
+                WHEN p.item_type = 'activity' THEN activity.title
+                ELSE '未知内容'
+            END as itemTitle,
+            CASE 
+                WHEN p.item_type = 'post' THEN post.subtitle
+                WHEN p.item_type = 'activity' THEN activity.description
+                ELSE ''
+            END as itemDescription,
+            CASE 
+                WHEN p.item_type = 'post' THEN JSON_UNQUOTE(JSON_EXTRACT(post.images, '$[0]'))
+                WHEN p.item_type = 'activity' THEN activity.image
+                ELSE ''
+            END as itemImage,
+            RAND() as similarityScore
+        FROM (
+            SELECT DISTINCT item_type, item_id
+            FROM view_history 
+            WHERE user_id IN (
+                SELECT DISTINCT user_id 
+                FROM view_history 
+                WHERE item_type = #{itemType} 
+                AND item_id IN (
+                    SELECT item_id 
+                    FROM view_history 
+                    WHERE user_id = #{userId} AND item_type = #{itemType}
+                    ORDER BY created_at DESC 
+                    LIMIT 10
+                )
+            )
+            AND user_id != #{userId}
+            LIMIT 50
+        ) p
+        LEFT JOIN posts post ON p.item_type = 'post' AND p.item_id = post.id
+        LEFT JOIN activities activity ON p.item_type = 'activity' AND p.item_id = activity.id
+        WHERE p.item_id NOT IN (
+            SELECT item_id 
+            FROM view_history 
+            WHERE user_id = #{userId} AND item_type = #{itemType}
+        )
+        ORDER BY similarityScore DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 获取相关内容（基于当前浏览内容） -->
+    <select id="selectRelatedItems" resultType="com.xystapp.service.ViewHistoryService$RecommendItem">
+        SELECT 
+            h.item_type as itemType,
+            h.item_id as itemId,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.title
+                WHEN h.item_type = 'activity' THEN a.title
+                ELSE '未知内容'
+            END as itemTitle,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.subtitle
+                WHEN h.item_type = 'activity' THEN a.description
+                ELSE ''
+            END as itemDescription,
+            CASE 
+                WHEN h.item_type = 'post' THEN JSON_UNQUOTE(JSON_EXTRACT(p.images, '$[0]'))
+                WHEN h.item_type = 'activity' THEN a.image
+                ELSE ''
+            END as itemImage,
+            COUNT(1) as similarityScore
+        FROM view_history h
+        LEFT JOIN posts p ON h.item_type = 'post' AND h.item_id = p.id
+        LEFT JOIN activities a ON h.item_type = 'activity' AND h.item_id = a.id
+        WHERE h.user_id IN (
+            SELECT DISTINCT user_id 
+            FROM view_history 
+            WHERE item_type = #{itemType} AND item_id = #{itemId}
+        )
+        AND h.item_type = #{itemType}
+        AND h.item_id != #{itemId}
+        GROUP BY h.item_type, h.item_id
+        ORDER BY similarityScore DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 获取用户可能感兴趣的内容 -->
+    <select id="selectUserInterestItems" resultType="com.xystapp.service.ViewHistoryService$RecommendItem">
+        SELECT 
+            h.item_type as itemType,
+            h.item_id as itemId,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.title
+                WHEN h.item_type = 'activity' THEN a.title
+                ELSE '未知内容'
+            END as itemTitle,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.subtitle
+                WHEN h.item_type = 'activity' THEN a.description
+                ELSE ''
+            END as itemDescription,
+            CASE 
+                WHEN h.item_type = 'post' THEN JSON_UNQUOTE(JSON_EXTRACT(p.images, '$[0]'))
+                WHEN h.item_type = 'activity' THEN a.image
+                ELSE ''
+            END as itemImage,
+            COUNT(1) as similarityScore
+        FROM view_history h
+        LEFT JOIN posts p ON h.item_type = 'post' AND h.item_id = p.id
+        LEFT JOIN activities a ON h.item_type = 'activity' AND h.item_id = a.id
+        WHERE h.user_id IN (
+            SELECT user_id 
+            FROM view_history 
+            WHERE item_id IN (
+                SELECT item_id 
+                FROM view_history 
+                WHERE user_id = #{userId}
+                ORDER BY created_at DESC 
+                LIMIT 20
+            )
+            AND user_id != #{userId}
+        )
+        AND h.item_id NOT IN (
+            SELECT item_id 
+            FROM view_history 
+            WHERE user_id = #{userId}
+        )
+        GROUP BY h.item_type, h.item_id
+        ORDER BY similarityScore DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- ==================== 批量操作 ==================== -->
+
+    <!-- 批量获取浏览记录 -->
+    <select id="selectViewHistoriesByIds" resultMap="ViewHistoryWithUserInfoMap">
+        SELECT 
+            h.id, h.user_id, h.item_type, h.item_id, h.created_at,
+            u.username, u.nickname, u.avatar,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.title
+                WHEN h.item_type = 'activity' THEN a.title
+                ELSE '未知内容'
+            END as item_title,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.subtitle
+                WHEN h.item_type = 'activity' THEN a.description
+                ELSE ''
+            END as item_description,
+            CASE 
+                WHEN h.item_type = 'post' THEN JSON_UNQUOTE(JSON_EXTRACT(p.images, '$[0]'))
+                WHEN h.item_type = 'activity' THEN a.image
+                ELSE ''
+            END as item_image,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.user_id
+                WHEN h.item_type = 'activity' THEN a.user_id
+                ELSE NULL
+            END as item_author_id,
+            CASE 
+                WHEN h.item_type = 'post' THEN pu.username
+                WHEN h.item_type = 'activity' THEN au.username
+                ELSE ''
+            END as item_author_username,
+            CASE 
+                WHEN h.item_type = 'post' THEN pu.nickname
+                WHEN h.item_type = 'activity' THEN au.nickname
+                ELSE ''
+            END as item_author_nickname,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.status
+                WHEN h.item_type = 'activity' THEN a.status
+                ELSE ''
+            END as item_status,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.created_at
+                WHEN h.item_type = 'activity' THEN a.created_at
+                ELSE NULL
+            END as item_created_at,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.updated_at
+                WHEN h.item_type = 'activity' THEN a.updated_at
+                ELSE NULL
+            END as item_updated_at,
+            CASE 
+                WHEN h.item_type = 'post' THEN (SELECT COUNT(1) FROM view_history WHERE item_type = 'post' AND item_id = h.item_id)
+                WHEN h.item_type = 'activity' THEN (SELECT COUNT(1) FROM view_history WHERE item_type = 'activity' AND item_id = h.item_id)
+                ELSE 0
+            END as view_count
+        FROM view_history h
+        INNER JOIN users u ON h.user_id = u.id
+        LEFT JOIN posts p ON h.item_type = 'post' AND h.item_id = p.id
+        LEFT JOIN activities a ON h.item_type = 'activity' AND h.item_id = a.id
+        LEFT JOIN users pu ON p.user_id = pu.id
+        LEFT JOIN users au ON a.user_id = au.id
+        WHERE h.id IN
+        <foreach collection="historyIds" item="historyId" open="(" separator="," close=")">
+            #{historyId}
+        </foreach>
+        ORDER BY h.created_at DESC
+    </select>
+
+    <!-- 批量检查浏览状态 -->
+    <select id="selectBatchViewStatus" resultType="com.xystapp.service.ViewHistoryService$ViewStatusInfo">
+        SELECT 
+            req.itemType as itemType,
+            req.itemId as itemId,
+            CASE WHEN h.id IS NOT NULL THEN true ELSE false END as hasViewed,
+            h.created_at as lastViewTime
+        FROM 
+        <foreach collection="requests" item="req" open="(" separator="UNION ALL" close=")">
+            SELECT #{req.itemType} as itemType, #{req.itemId} as itemId
+        </foreach>
+        req
+        LEFT JOIN view_history h ON h.user_id = #{userId} AND h.item_type = req.itemType AND h.item_id = req.itemId
+        ORDER BY req.itemType, req.itemId
+    </select>
+
+    <!-- 批量获取用户浏览统计 -->
+    <select id="selectBatchUserViewStats" resultType="com.xystapp.service.ViewHistoryService$UserViewStats">
+        SELECT 
+            h.user_id as userId,
+            COUNT(1) as totalViews,
+            SUM(CASE WHEN h.item_type = 'post' THEN 1 ELSE 0 END) as postViews,
+            SUM(CASE WHEN h.item_type = 'activity' THEN 1 ELSE 0 END) as activityViews,
+            SUM(CASE WHEN DATE(h.created_at) = CURDATE() THEN 1 ELSE 0 END) as todayViews,
+            SUM(CASE WHEN h.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) THEN 1 ELSE 0 END) as thisWeekViews,
+            SUM(CASE WHEN h.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) as thisMonthViews,
+            COUNT(DISTINCT CONCAT(h.item_type, '_', h.item_id)) as uniqueItemsViewed
+        FROM view_history h
+        WHERE h.user_id IN
+        <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+            #{userId}
+        </foreach>
+        GROUP BY h.user_id
+    </select>
+
+    <!-- ==================== 数据维护 ==================== -->
+
+    <!-- 删除用户的所有浏览记录 -->
+    <delete id="deleteByUserId">
+        DELETE FROM view_history WHERE user_id = #{userId}
+    </delete>
+
+    <!-- 删除用户指定类型的浏览记录 -->
+    <delete id="deleteByUserIdAndType">
+        DELETE FROM view_history WHERE user_id = #{userId} AND item_type = #{itemType}
+    </delete>
+
+    <!-- 删除过期的浏览记录 -->
+    <delete id="deleteExpiredViewHistory">
+        DELETE FROM view_history 
+        WHERE created_at &lt; DATE_SUB(NOW(), INTERVAL #{days} DAY)
+    </delete>
+
+    <!-- 统计过期记录数量 -->
+    <select id="countExpiredViewHistory" resultType="long">
+        SELECT COUNT(1) 
+        FROM view_history 
+        WHERE created_at &lt; DATE_SUB(NOW(), INTERVAL #{days} DAY)
+    </select>
+
+    <!-- ==================== 数据导出 ==================== -->
+
+    <!-- 导出用户浏览记录 -->
+    <select id="selectExportUserViewHistory" resultMap="ViewHistoryWithUserInfoMap">
+        SELECT 
+            h.id, h.user_id, h.item_type, h.item_id, h.created_at,
+            u.username, u.nickname, u.avatar,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.title
+                WHEN h.item_type = 'activity' THEN a.title
+                ELSE '未知内容'
+            END as item_title,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.subtitle
+                WHEN h.item_type = 'activity' THEN a.description
+                ELSE ''
+            END as item_description,
+            CASE 
+                WHEN h.item_type = 'post' THEN JSON_UNQUOTE(JSON_EXTRACT(p.images, '$[0]'))
+                WHEN h.item_type = 'activity' THEN a.image
+                ELSE ''
+            END as item_image,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.user_id
+                WHEN h.item_type = 'activity' THEN a.user_id
+                ELSE NULL
+            END as item_author_id,
+            CASE 
+                WHEN h.item_type = 'post' THEN pu.username
+                WHEN h.item_type = 'activity' THEN au.username
+                ELSE ''
+            END as item_author_username,
+            CASE 
+                WHEN h.item_type = 'post' THEN pu.nickname
+                WHEN h.item_type = 'activity' THEN au.nickname
+                ELSE ''
+            END as item_author_nickname,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.status
+                WHEN h.item_type = 'activity' THEN a.status
+                ELSE ''
+            END as item_status,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.created_at
+                WHEN h.item_type = 'activity' THEN a.created_at
+                ELSE NULL
+            END as item_created_at,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.updated_at
+                WHEN h.item_type = 'activity' THEN a.updated_at
+                ELSE NULL
+            END as item_updated_at,
+            CASE 
+                WHEN h.item_type = 'post' THEN (SELECT COUNT(1) FROM view_history WHERE item_type = 'post' AND item_id = h.item_id)
+                WHEN h.item_type = 'activity' THEN (SELECT COUNT(1) FROM view_history WHERE item_type = 'activity' AND item_id = h.item_id)
+                ELSE 0
+            END as view_count
+        FROM view_history h
+        INNER JOIN users u ON h.user_id = u.id
+        LEFT JOIN posts p ON h.item_type = 'post' AND h.item_id = p.id
+        LEFT JOIN activities a ON h.item_type = 'activity' AND h.item_id = a.id
+        LEFT JOIN users pu ON p.user_id = pu.id
+        LEFT JOIN users au ON a.user_id = au.id
+        WHERE h.user_id = #{userId}
+        <if test="itemType != null and itemType != ''">
+            AND h.item_type = #{itemType}
+        </if>
+        <choose>
+            <when test="timeRange == 'today'">
+                AND DATE(h.created_at) = CURDATE()
+            </when>
+            <when test="timeRange == 'yesterday'">
+                AND DATE(h.created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+            </when>
+            <when test="timeRange == 'week'">
+                AND h.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+            </when>
+            <when test="timeRange == 'month'">
+                AND h.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+            </when>
+            <when test="timeRange == 'year'">
+                AND h.created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+            </when>
+        </choose>
+        ORDER BY h.created_at DESC
+    </select>
+
+    <!-- 导出热门内容统计 -->
+    <select id="selectExportHotItems" resultType="com.xystapp.service.ViewHistoryService$HotItemStats">
+        SELECT 
+            h.item_type as itemType,
+            h.item_id as itemId,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.title
+                WHEN h.item_type = 'activity' THEN a.title
+                ELSE '未知内容'
+            END as itemTitle,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.subtitle
+                WHEN h.item_type = 'activity' THEN a.description
+                ELSE ''
+            END as itemDescription,
+            CASE 
+                WHEN h.item_type = 'post' THEN JSON_UNQUOTE(JSON_EXTRACT(p.images, '$[0]'))
+                WHEN h.item_type = 'activity' THEN a.image
+                ELSE ''
+            END as itemImage,
+            COUNT(1) as viewCount,
+            COUNT(DISTINCT h.user_id) as uniqueViewers,
+            MAX(h.created_at) as lastViewTime
+        FROM view_history h
+        LEFT JOIN posts p ON h.item_type = 'post' AND h.item_id = p.id
+        LEFT JOIN activities a ON h.item_type = 'activity' AND h.item_id = a.id
+        WHERE h.item_type = #{itemType}
+        <choose>
+            <when test="timeRange == 'today'">
+                AND DATE(h.created_at) = CURDATE()
+            </when>
+            <when test="timeRange == 'week'">
+                AND h.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+            </when>
+            <when test="timeRange == 'month'">
+                AND h.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+            </when>
+            <when test="timeRange == 'year'">
+                AND h.created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+            </when>
+        </choose>
+        GROUP BY h.item_type, h.item_id
+        ORDER BY viewCount DESC, lastViewTime DESC
+    </select>
+
+    <!-- ==================== 业务查询 ==================== -->
+
+    <!-- 获取用户浏览过的内容ID列表 -->
+    <select id="selectUserViewedItemIds" resultType="long">
+        SELECT DISTINCT item_id 
+        FROM view_history 
+        WHERE user_id = #{userId}
+        <if test="itemType != null and itemType != ''">
+            AND item_type = #{itemType}
+        </if>
+        ORDER BY created_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 获取内容浏览者列表 -->
+    <select id="selectItemViewers" resultMap="ViewHistoryWithUserInfoMap">
+        SELECT 
+            h.id, h.user_id, h.item_type, h.item_id, h.created_at,
+            u.username, u.nickname, u.avatar,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.title
+                WHEN h.item_type = 'activity' THEN a.title
+                ELSE '未知内容'
+            END as item_title,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.subtitle
+                WHEN h.item_type = 'activity' THEN a.description
+                ELSE ''
+            END as item_description,
+            CASE 
+                WHEN h.item_type = 'post' THEN JSON_UNQUOTE(JSON_EXTRACT(p.images, '$[0]'))
+                WHEN h.item_type = 'activity' THEN a.image
+                ELSE ''
+            END as item_image,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.user_id
+                WHEN h.item_type = 'activity' THEN a.user_id
+                ELSE NULL
+            END as item_author_id,
+            CASE 
+                WHEN h.item_type = 'post' THEN pu.username
+                WHEN h.item_type = 'activity' THEN au.username
+                ELSE ''
+            END as item_author_username,
+            CASE 
+                WHEN h.item_type = 'post' THEN pu.nickname
+                WHEN h.item_type = 'activity' THEN au.nickname
+                ELSE ''
+            END as item_author_nickname,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.status
+                WHEN h.item_type = 'activity' THEN a.status
+                ELSE ''
+            END as item_status,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.created_at
+                WHEN h.item_type = 'activity' THEN a.created_at
+                ELSE NULL
+            END as item_created_at,
+            CASE 
+                WHEN h.item_type = 'post' THEN p.updated_at
+                WHEN h.item_type = 'activity' THEN a.updated_at
+                ELSE NULL
+            END as item_updated_at,
+            CASE 
+                WHEN h.item_type = 'post' THEN (SELECT COUNT(1) FROM view_history WHERE item_type = 'post' AND item_id = h.item_id)
+                WHEN h.item_type = 'activity' THEN (SELECT COUNT(1) FROM view_history WHERE item_type = 'activity' AND item_id = h.item_id)
+                ELSE 0
+            END as view_count
+        FROM view_history h
+        INNER JOIN users u ON h.user_id = u.id
+        LEFT JOIN posts p ON h.item_type = 'post' AND h.item_id = p.id
+        LEFT JOIN activities a ON h.item_type = 'activity' AND h.item_id = a.id
+        LEFT JOIN users pu ON p.user_id = pu.id
+        LEFT JOIN users au ON a.user_id = au.id
+        WHERE h.item_type = #{itemType} AND h.item_id = #{itemId}
+        ORDER BY h.created_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 获取用户浏览偏好分析 -->
+    <select id="selectUserViewPreference" resultType="com.xystapp.service.ViewHistoryService$ViewPreferenceAnalysis">
+        SELECT 
+            (SELECT item_type 
+             FROM view_history 
+             WHERE user_id = #{userId} 
+             GROUP BY item_type 
+             ORDER BY COUNT(1) DESC 
+             LIMIT 1) as preferredItemType,
+            (SELECT COUNT(1) / (SELECT COUNT(1) FROM view_history WHERE user_id = #{userId}) 
+             FROM view_history 
+             WHERE user_id = #{userId} 
+             GROUP BY item_type 
+             ORDER BY COUNT(1) DESC 
+             LIMIT 1) as preferenceScore,
+            NULL as interestedTags,
+            (SELECT DISTINCT item_author_id 
+             FROM view_history 
+             WHERE user_id = #{userId} AND item_author_id IS NOT NULL
+             GROUP BY item_author_id 
+             ORDER BY COUNT(1) DESC 
+             LIMIT 5) as frequentlyViewedAuthors
+    </select>
+
+</mapper>

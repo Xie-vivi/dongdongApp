@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xystapp.mapper.ActivityStarMapper">
+
+    <!-- 活动收藏结果映射（包含用户信息） -->
+    <resultMap id="ActivityStarWithUserInfoMap" type="com.xystapp.entity.ActivityStar">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="activity_id" property="activityId"/>
+        <result column="created_at" property="createdAt"/>
+        
+        <!-- 用户信息 -->
+        <result column="username" property="username"/>
+        <result column="nickname" property="nickname"/>
+        <result column="avatar" property="avatar"/>
+        
+        <!-- 活动信息 -->
+        <result column="activity_title" property="activityTitle"/>
+        <result column="activity_description" property="activityDescription"/>
+    </resultMap>
+
+    <!-- 获取活动收藏列表（包含用户信息） -->
+    <select id="selectActivityStarsWithUserInfo" resultMap="ActivityStarWithUserInfoMap">
+        SELECT 
+            ast.id, ast.user_id, ast.activity_id, ast.created_at,
+            u.username, u.nickname, u.avatar,
+            a.title as activity_title,
+            LEFT(a.description, 100) as activity_description
+        FROM activity_stars ast
+        INNER JOIN users u ON ast.user_id = u.id
+        INNER JOIN activities a ON ast.activity_id = a.id
+        WHERE ast.activity_id = #{activityId}
+        ORDER BY ast.created_at DESC
+    </select>
+
+    <!-- 获取用户收藏的活动列表（包含活动信息） -->
+    <select id="selectUserStarredActivitiesWithInfo" resultMap="ActivityStarWithUserInfoMap">
+        SELECT 
+            ast.id, ast.user_id, ast.activity_id, ast.created_at,
+            u.username, u.nickname, u.avatar,
+            a.title as activity_title,
+            LEFT(a.description, 100) as activity_description
+        FROM activity_stars ast
+        INNER JOIN users u ON ast.user_id = u.id
+        INNER JOIN activities a ON ast.activity_id = a.id
+        WHERE ast.user_id = #{userId}
+        ORDER BY ast.created_at DESC
+    </select>
+
+    <!-- 统计用户收藏的活动数量 -->
+    <select id="countUserActivityStars" resultType="long">
+        SELECT COUNT(1)
+        FROM activity_stars
+        WHERE user_id = #{userId}
+    </select>
+
+    <!-- 获取用户收藏的活动ID列表 -->
+    <select id="selectStarredActivityIds" resultType="long">
+        SELECT activity_id
+        FROM activity_stars
+        WHERE user_id = #{userId}
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 批量检查活动收藏状态 -->
+    <select id="selectStarredActivityIdsByUser" resultType="long">
+        SELECT activity_id
+        FROM activity_stars
+        WHERE user_id = #{userId}
+        AND activity_id IN
+        <foreach collection="activityIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+</mapper>

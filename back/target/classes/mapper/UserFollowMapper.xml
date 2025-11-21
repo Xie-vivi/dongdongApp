@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xystapp.mapper.UserFollowMapper">
+
+    <!-- 用户关注关系结果映射（包含用户信息） -->
+    <resultMap id="UserFollowWithUserInfoMap" type="com.xystapp.entity.UserFollow">
+        <id column="id" property="id"/>
+        <result column="follower_id" property="followerId"/>
+        <result column="following_id" property="followingId"/>
+        <result column="created_at" property="createdAt"/>
+        
+        <!-- 关注者信息 -->
+        <result column="follower_username" property="followerUsername"/>
+        <result column="follower_nickname" property="followerNickname"/>
+        <result column="follower_avatar" property="followerAvatar"/>
+        
+        <!-- 被关注者信息 -->
+        <result column="following_username" property="followingUsername"/>
+        <result column="following_nickname" property="followingNickname"/>
+        <result column="following_avatar" property="followingAvatar"/>
+        
+        <!-- 是否互相关注 -->
+        <result column="is_mutual_follow" property="isFollowingEachOther"/>
+    </resultMap>
+
+    <!-- 获取关注列表（我关注的人） -->
+    <select id="selectFollowingWithUserInfo" resultMap="UserFollowWithUserInfoMap">
+        SELECT 
+            uf.id, uf.follower_id, uf.following_id, uf.created_at,
+            u_follower.username as follower_username,
+            u_follower.nickname as follower_nickname,
+            u_follower.avatar as follower_avatar,
+            u_following.username as following_username,
+            u_following.nickname as following_nickname,
+            u_following.avatar as following_avatar,
+            CASE WHEN uf_reverse.id IS NOT NULL THEN true ELSE false END as is_mutual_follow
+        FROM user_follows uf
+        INNER JOIN users u_follower ON uf.follower_id = u_follower.id
+        INNER JOIN users u_following ON uf.following_id = u_following.id
+        LEFT JOIN user_follows uf_reverse ON uf.following_id = uf_reverse.follower_id 
+                                          AND uf.follower_id = uf_reverse.following_id
+        WHERE uf.follower_id = #{userId}
+        ORDER BY uf.created_at DESC
+    </select>
+
+    <!-- 获取粉丝列表（关注我的人） -->
+    <select id="selectFollowersWithUserInfo" resultMap="UserFollowWithUserInfoMap">
+        SELECT 
+            uf.id, uf.follower_id, uf.following_id, uf.created_at,
+            u_follower.username as follower_username,
+            u_follower.nickname as follower_nickname,
+            u_follower.avatar as follower_avatar,
+            u_following.username as following_username,
+            u_following.nickname as following_nickname,
+            u_following.avatar as following_avatar,
+            CASE WHEN uf_reverse.id IS NOT NULL THEN true ELSE false END as is_mutual_follow
+        FROM user_follows uf
+        INNER JOIN users u_follower ON uf.follower_id = u_follower.id
+        INNER JOIN users u_following ON uf.following_id = u_following.id
+        LEFT JOIN user_follows uf_reverse ON uf.following_id = uf_reverse.follower_id 
+                                          AND uf.follower_id = uf_reverse.following_id
+        WHERE uf.following_id = #{userId}
+        ORDER BY uf.created_at DESC
+    </select>
+
+    <!-- 获取互相关注列表 -->
+    <select id="selectMutualFollowsWithUserInfo" resultMap="UserFollowWithUserInfoMap">
+        SELECT 
+            uf.id, uf.follower_id, uf.following_id, uf.created_at,
+            u_follower.username as follower_username,
+            u_follower.nickname as follower_nickname,
+            u_follower.avatar as follower_avatar,
+            u_following.username as following_username,
+            u_following.nickname as following_nickname,
+            u_following.avatar as following_avatar,
+            true as is_mutual_follow
+        FROM user_follows uf
+        INNER JOIN users u_follower ON uf.follower_id = u_follower.id
+        INNER JOIN users u_following ON uf.following_id = u_following.id
+        INNER JOIN user_follows uf_reverse ON uf.following_id = uf_reverse.follower_id 
+                                          AND uf.follower_id = uf_reverse.following_id
+        WHERE uf.follower_id = #{userId}
+        ORDER BY uf.created_at DESC
+    </select>
+
+    <!-- 统计关注数量 -->
+    <select id="countFollowing" resultType="long">
+        SELECT COUNT(1)
+        FROM user_follows
+        WHERE follower_id = #{userId}
+    </select>
+
+    <!-- 统计粉丝数量 -->
+    <select id="countFollowers" resultType="long">
+        SELECT COUNT(1)
+        FROM user_follows
+        WHERE following_id = #{userId}
+    </select>
+
+    <!-- 统计互相关注数量 -->
+    <select id="countMutualFollows" resultType="long">
+        SELECT COUNT(1)
+        FROM user_follows uf
+        INNER JOIN user_follows uf_reverse ON uf.following_id = uf_reverse.follower_id 
+                                          AND uf.follower_id = uf_reverse.following_id
+        WHERE uf.follower_id = #{userId}
+    </select>
+
+    <!-- 获取关注用户ID列表 -->
+    <select id="selectFollowingIds" resultType="long">
+        SELECT following_id
+        FROM user_follows
+        WHERE follower_id = #{userId}
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 检查是否互相关注 -->
+    <select id="isMutualFollow" resultType="boolean">
+        SELECT COUNT(1) > 0
+        FROM user_follows uf1
+        INNER JOIN user_follows uf2 ON uf1.following_id = uf2.follower_id 
+                                  AND uf1.follower_id = uf2.following_id
+        WHERE uf1.follower_id = #{followerId} AND uf1.following_id = #{followingId}
+    </select>
+
+    <!-- 批量检查关注状态 -->
+    <select id="selectMutualFollowingIds" resultType="long">
+        SELECT uf2.following_id
+        FROM user_follows uf1
+        INNER JOIN user_follows uf2 ON uf1.following_id = uf2.follower_id 
+                                  AND uf1.follower_id = uf2.following_id
+        WHERE uf1.follower_id = #{userId}
+        AND uf2.following_id IN
+        <foreach collection="targetIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+</mapper>

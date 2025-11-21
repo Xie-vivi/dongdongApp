@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xystapp.mapper.SearchHistoryMapper">
+
+    <!-- 搜索历史基础结果映射 -->
+    <resultMap id="BaseResultMap" type="com.xystapp.entity.SearchHistory">
+        <id column="id" property="id" />
+        <result column="user_id" property="userId" />
+        <result column="keyword" property="keyword" />
+        <result column="search_type" property="searchType" />
+        <result column="result_count" property="resultCount" />
+        <result column="search_ip" property="searchIp" />
+        <result column="user_agent" property="userAgent" />
+        <result column="created_at" property="createdAt" />
+    </resultMap>
+
+    <!-- 搜索历史详情结果映射（包含用户信息） -->
+    <resultMap id="SearchHistoryDetailMap" type="com.xystapp.entity.SearchHistory" extends="BaseResultMap">
+        <result column="username" property="username" />
+        <result column="nickname" property="nickname" />
+        <result column="search_count" property="searchCount" />
+        <result column="is_hot" property="isHot" />
+    </resultMap>
+
+    <!-- 搜索历史基础列 -->
+    <sql id="Base_Column_List">
+        id, user_id, keyword, search_type, result_count, search_ip, user_agent, created_at
+    </sql>
+
+    <!-- 搜索历史详情列 -->
+    <sql id="Detail_Column_List">
+        h.id, h.user_id, h.keyword, h.search_type, h.result_count, h.search_ip, h.user_agent, h.created_at,
+        u.username,
+        u.nickname,
+        (SELECT COUNT(*) FROM search_history sh WHERE sh.keyword = h.keyword) as search_count,
+        CASE WHEN (SELECT COUNT(*) FROM search_history sh WHERE sh.keyword = h.keyword) > 10 THEN true ELSE false END as is_hot
+    </sql>
+
+    <!-- 获取用户搜索历史列表（包含用户信息） -->
+    <select id="selectUserSearchHistory" resultMap="SearchHistoryDetailMap">
+        SELECT 
+        <include refid="Detail_Column_List" />
+        FROM search_history h
+        LEFT JOIN users u ON h.user_id = u.id
+        WHERE h.user_id = #{userId}
+        ORDER BY h.created_at DESC
+    </select>
+
+    <!-- 获取热门搜索关键词 -->
+    <select id="selectHotKeywords" resultType="com.xystapp.mapper.SearchHistoryMapper$HotKeywordStats">
+        SELECT 
+            keyword,
+            COUNT(*) as searchCount,
+            AVG(result_count) as avgResultCount,
+            MAX(created_at) as lastSearchTime
+        FROM search_history
+        WHERE 1=1
+        <if test="searchType != null and searchType != ''">
+            AND search_type = #{searchType}
+        </if>
+        <if test="days != null and days > 0">
+            AND created_at >= DATE_SUB(NOW(), INTERVAL #{days} DAY)
+        </if>
+        GROUP BY keyword
+        HAVING searchCount > 0
+        ORDER BY searchCount DESC, lastSearchTime DESC
+        <if test="limit != null and limit > 0">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 获取用户搜索关键词 -->
+    <select id="selectUserKeywords" resultType="java.lang.String">
+        SELECT DISTINCT keyword
+        FROM search_history
+        WHERE user_id = #{userId}
+        <if test="searchType != null and searchType != ''">
+            AND search_type = #{searchType}
+        </if>
+        ORDER BY created_at DESC
+        <if test="limit != null and limit > 0">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 获取搜索建议（基于历史搜索） -->
+    <select id="selectSearchSuggestions" resultType="java.lang.String">
+        SELECT DISTINCT keyword
+        FROM search_history
+        WHERE keyword LIKE CONCAT('%', #{keyword}, '%')
+        <if test="searchType != null and searchType != ''">
+            AND search_type = #{searchType}
+        </if>
+        ORDER BY 
+            CASE 
+                WHEN keyword LIKE CONCAT(#{keyword}, '%') THEN 1
+                WHEN keyword LIKE CONCAT('%', #{keyword}) THEN 3
+                ELSE 2
+            END,
+            searchCount DESC,
+            created_at DESC
+        <if test="limit != null and limit > 0">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 获取相关搜索词 -->
+    <select id="selectRelatedKeywords" resultType="java.lang.String">
+        SELECT DISTINCT keyword
+        FROM search_history
+        WHERE keyword != #{keyword}
+        AND (
+            keyword LIKE CONCAT('%', #{keyword}, '%')
+            OR #{keyword} LIKE CONCAT('%', keyword, '%')
+        )
+        ORDER BY searchCount DESC, created_at DESC
+        <if test="limit != null and limit > 0">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 统计关键词搜索次数 -->
+    <select id="countKeywordSearches" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM search_history
+        WHERE keyword = #{keyword}
+        <if test="searchType != null and searchType != ''">
+            AND search_type = #{searchType}
+        </if>
+        <if test="days != null and days > 0">
+            AND created_at >= DATE_SUB(NOW(), INTERVAL #{days} DAY)
+        </if>
+    </select>
+
+    <!-- 获取搜索统计 -->
+    <select id="selectSearchStats" resultType="com.xystapp.mapper.SearchHistoryMapper$SearchStats">
+        SELECT 
+            COUNT(*) as totalSearches,
+            (SELECT COUNT(*) FROM search_history WHERE DATE(created_at) = CURDATE()
+            <if test="userId != null">
+                AND user_id = #{userId}
+            </if>
+            ) as todaySearches,
+            COUNT(DISTINCT keyword) as uniqueKeywords,
+            AVG(result_count) as avgResultCount
+        FROM search_history
+        WHERE 1=1
+        <if test="userId != null">
+            AND user_id = #{userId}
+        </if>
+    </select>
+
+    <!-- 获取搜索趋势统计 -->
+    <select id="selectSearchTrend" resultType="com.xystapp.mapper.SearchHistoryMapper$SearchTrendStats">
+        SELECT 
+            DATE(created_at) as date,
+            COUNT(*) as searchCount,
+            COUNT(DISTINCT user_id) as uniqueUsers
+        FROM search_history
+        WHERE created_at >= DATE_SUB(NOW(), INTERVAL #{days} DAY)
+        GROUP BY DATE(created_at)
+        ORDER BY date DESC
+    </select>
+
+    <!-- 获取用户搜索统计 -->
+    <select id="selectUserSearchStats" resultType="com.xystapp.mapper.SearchHistoryMapper$UserSearchStats">
+        SELECT 
+            u.id as userId,
+            u.username,
+            u.nickname,
+            COUNT(h.id) as searchCount,
+            MAX(h.created_at) as lastSearchTime
+        FROM users u
+        LEFT JOIN search_history h ON u.id = h.user_id
+        <if test="days != null and days > 0">
+            AND h.created_at >= DATE_SUB(NOW(), INTERVAL #{days} DAY)
+        </if>
+        GROUP BY u.id, u.username, u.nickname
+        HAVING searchCount > 0
+        ORDER BY searchCount DESC, lastSearchTime DESC
+        <if test="limit != null and limit > 0">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 清除用户搜索历史 -->
+    <delete id="deleteByUserId">
+        DELETE FROM search_history WHERE user_id = #{userId}
+    </delete>
+
+    <!-- 获取用户最近搜索 -->
+    <select id="selectRecentSearches" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List" />
+        FROM search_history
+        WHERE user_id = #{userId}
+        <if test="searchType != null and searchType != ''">
+            AND search_type = #{searchType}
+        </if>
+        ORDER BY created_at DESC
+        <if test="limit != null and limit > 0">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 批量删除搜索历史 -->
+    <delete id="deleteByIds">
+        DELETE FROM search_history 
+        WHERE id IN
+        <foreach collection="historyIds" item="historyId" open="(" separator="," close=")">
+            #{historyId}
+        </foreach>
+        <if test="userId != null">
+            AND user_id = #{userId}
+        </if>
+    </delete>
+
+    <!-- 清理过期搜索历史 -->
+    <delete id="cleanupExpiredHistory">
+        DELETE FROM search_history 
+        WHERE created_at &lt; DATE_SUB(NOW(), INTERVAL #{days} DAY)
+    </delete>
+
+</mapper>

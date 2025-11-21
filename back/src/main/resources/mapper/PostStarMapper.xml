@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xystapp.mapper.PostStarMapper">
+
+    <!-- 帖子收藏结果映射（包含用户信息） -->
+    <resultMap id="PostStarWithUserInfoMap" type="com.xystapp.entity.PostStar">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="post_id" property="postId"/>
+        <result column="created_at" property="createdAt"/>
+        
+        <!-- 用户信息 -->
+        <result column="username" property="username"/>
+        <result column="nickname" property="nickname"/>
+        <result column="avatar" property="avatar"/>
+        
+        <!-- 帖子信息 -->
+        <result column="post_title" property="postTitle"/>
+        <result column="post_content" property="postContent"/>
+    </resultMap>
+
+    <!-- 获取帖子收藏列表（包含用户信息） -->
+    <select id="selectPostStarsWithUserInfo" resultMap="PostStarWithUserInfoMap">
+        SELECT 
+            ps.id, ps.user_id, ps.post_id, ps.created_at,
+            u.username, u.nickname, u.avatar,
+            p.title as post_title,
+            LEFT(p.content, 100) as post_content
+        FROM post_stars ps
+        INNER JOIN users u ON ps.user_id = u.id
+        INNER JOIN posts p ON ps.post_id = p.id
+        WHERE ps.post_id = #{postId}
+        ORDER BY ps.created_at DESC
+    </select>
+
+    <!-- 获取用户收藏的帖子列表（包含帖子信息） -->
+    <select id="selectUserStarredPostsWithInfo" resultMap="PostStarWithUserInfoMap">
+        SELECT 
+            ps.id, ps.user_id, ps.post_id, ps.created_at,
+            u.username, u.nickname, u.avatar,
+            p.title as post_title,
+            LEFT(p.content, 100) as post_content
+        FROM post_stars ps
+        INNER JOIN users u ON ps.user_id = u.id
+        INNER JOIN posts p ON ps.post_id = p.id
+        WHERE ps.user_id = #{userId}
+        ORDER BY ps.created_at DESC
+    </select>
+
+    <!-- 统计用户收藏的帖子数量 -->
+    <select id="countUserPostStars" resultType="long">
+        SELECT COUNT(1)
+        FROM post_stars
+        WHERE user_id = #{userId}
+    </select>
+
+    <!-- 获取用户收藏的帖子ID列表 -->
+    <select id="selectStarredPostIds" resultType="long">
+        SELECT post_id
+        FROM post_stars
+        WHERE user_id = #{userId}
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 批量检查帖子收藏状态 -->
+    <select id="selectStarredPostIdsByUser" resultType="long">
+        SELECT post_id
+        FROM post_stars
+        WHERE user_id = #{userId}
+        AND post_id IN
+        <foreach collection="postIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+</mapper>
